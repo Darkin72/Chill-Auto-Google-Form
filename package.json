@@ -2,6 +2,9 @@
   "name": "auto-google-form",
   "private": true,
   "version": "0.0.0",
+  "license": "MIT",
+  "description": "A website that automatically fills out Google Forms.",
+  "author": "Darkin72",
   "type": "module",
   "scripts": {
     "dev": "vite",
