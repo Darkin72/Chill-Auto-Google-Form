@@ -1,22 +1,19 @@
-import { useState } from "react";
-import donateIcon from "/donate.png";
 import { Link } from "react-router-dom";
+import donateIcon from "/donate.png";
 
 function Donate() {
   return (
-    <>
-      <Link
-        to="donate"
-        className="flex flex-col items-center mx-10 max-w-[10vw]"
-      >
-        <img
-          src={donateIcon}
-          alt="logo"
-          className="w-10 h-10 rounded-full border-2 border-gray-300"
-        />
-        <h1 className="text-[13px] font-bold">Donate me!!!</h1>
-      </Link>
-    </>
+    <Link
+      to="donate"
+      className="duration-300 hover:scale-105 inline-flex items-center gap-2 px-3 py-1 mr-5 rounded-full bg-yellow-100 hover:bg-yellow-200 transition-tranform shadow-md"
+    >
+      <img
+        src={donateIcon}
+        alt="Donate icon"
+        className="w-6 h-6 rounded-full border border-gray-400"
+      />
+      <span className="text-sm font-semibold text-gray-800">Donate me!!!</span>
+    </Link>
   );
 }
 

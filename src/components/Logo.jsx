@@ -6,7 +6,7 @@ function Logo() {
     <>
       <Link
         to="/"
-        className="flex flex-row items-center gap-2 mx-10 my-2 max-w-[10vw]"
+        className="flex flex-row items-center gap-2 mx-10 my-2 max-w-[10vw] "
       >
         <img
           src={logo}
