@@ -4,7 +4,7 @@ import cf from "/coffee.png";
 
 function DonatePage() {
   return (
-    <div class="flex flex-col md:flex-row justify-center items-center gap-x-10 h-[93vh]">
+    <div className="flex flex-col md:flex-row justify-center items-center gap-x-10 h-[93vh]">
       <div className="flex flex-col items-center gap-10 max-w-[30vw]">
         <span className="text-2xl">
           Mọi sự đóng góp của bạn đều rất quý giá và sẽ giúp tôi phát triển dự
