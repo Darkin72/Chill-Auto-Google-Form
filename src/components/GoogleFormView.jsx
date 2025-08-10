@@ -16,6 +16,7 @@ import {
   SendOutlined,
 } from "@ant-design/icons";
 import { sendForm } from "../utils/SentForm";
+import FormModal from "./FormModal";
 const { TextArea } = Input;
 
 const QuestionTypes = {
@@ -38,6 +39,12 @@ const NonRenderQuestionTypes = [6, 8]; // Types that should not be rendered
 function GoolgeFormView({ data, setData }) {
   const [loading, setLoading] = useState(false);
   const [generateAll, setGenerateAll] = useState(false);
+  const [openSentFormModal, setOpenSentFormModal] = useState(false);
+  const [responseSentForm, setResponseSentForm] = useState({
+    success: false,
+    message: "",
+    loading: true,
+  });
   const [answer, setAnswer] = useState(() =>
     Object.fromEntries(
       data.questions.flatMap((q) =>
@@ -46,13 +53,37 @@ function GoolgeFormView({ data, setData }) {
               [
                 q[4][0][0],
                 {
+                  title: q[1],
                   content: "",
                   ai_generate: false,
                   mustAnswer: q[4][0][2],
                   type: q[3],
-                  ratios: {},
+                  ratios: (() => {
+                    // Tạo ratios mặc định cho các loại câu hỏi có options
+                    if ([2, 3, 4, 5, 18].includes(q[3])) {
+                      const options = q[4][0][1] || [];
+                      return Object.fromEntries(
+                        options.map((_, idx) => [idx, 0])
+                      );
+                    }
+                    return {};
+                  })(),
                   otherValue: "",
-                  gridRatios: {},
+                  gridRatios: (() => {
+                    // Tạo gridRatios mặc định cho Grid questions (type 7)
+                    if (q[3] === 7) {
+                      const gridRatios = {};
+                      q[4].forEach((row, rowIdx) => {
+                        if (row[1]) {
+                          row[1].forEach((_, optIdx) => {
+                            gridRatios[`${rowIdx}-${optIdx}`] = 0;
+                          });
+                        }
+                      });
+                      return gridRatios;
+                    }
+                    return {};
+                  })(),
                 },
               ],
             ]
@@ -167,14 +198,11 @@ function GoolgeFormView({ data, setData }) {
           >
             Đồng bộ dữ liệu
           </Button>
-          <Button
-            onClick={() => {
-              sendForm(answer);
-            }}
-            icon={<SendOutlined />}
-          >
-            Bắt đầu gửi
-          </Button>
+          <SentButton
+            answer={answer}
+            setOpenSentFormModal={setOpenSentFormModal}
+            setResponseSentForm={setResponseSentForm}
+          />
           <Button icon={<FileTextOutlined />}>Hướng dẫn sử dụng</Button>
         </div>
         <div className="flex flex-row justify-center bg-blue-50 hover:shadow-md transition-all duration-200 border-purple-600 border-t-4 px-4 py-6 w-full rounded-4xl items-center">
@@ -206,15 +234,45 @@ function GoolgeFormView({ data, setData }) {
             );
           })}
         </div>
-        <Button
-          onClick={() => {
-            sendForm(answer);
-          }}
-          icon={<SendOutlined />}
-        >
-          Bắt đầu gửi
-        </Button>
+        <SentButton
+          answer={answer}
+          setOpenSentFormModal={setOpenSentFormModal}
+          setResponseSentForm={setResponseSentForm}
+        />
       </div>
+      <FormModal
+        isModalOpen={openSentFormModal}
+        setIsModalOpen={setOpenSentFormModal}
+        message={responseSentForm.message}
+        loading={responseSentForm.loading}
+        answer={answer}
+      />
+    </>
+  );
+}
+
+function SentButton({ answer, setOpenSentFormModal, setResponseSentForm }) {
+  return (
+    <>
+      <Button
+        onClick={() => {
+          setOpenSentFormModal(true);
+          setResponseSentForm({
+            success: false,
+            message: "",
+            loading: true,
+          });
+          const response = sendForm(answer);
+          setResponseSentForm({
+            success: response.success,
+            message: response.message,
+            loading: false,
+          });
+        }}
+        icon={<SendOutlined />}
+      >
+        Bắt đầu gửi
+      </Button>
     </>
   );
 }
@@ -235,7 +293,11 @@ function QuestionHeader({ question }) {
     <Box className="border-2 box-border rounded-2xl border-gray-300 justify-start items-start font-bold">
       {question[1]}
       <p className="text-red-500 text-sm">
-        {question?.[4]?.[0]?.[2] ? "(Bắt buộc)" : ""}
+        {question?.[4]?.[0]?.[2]
+          ? question[3] === 7
+            ? "Yêu cầu một phản hồi trong mỗi hàng"
+            : "Bắt buộc"
+          : ""}
       </p>
     </Box>
   );
@@ -378,34 +440,47 @@ function LinearScaleInput({
   isGenerate,
   setAIGenerated,
   question,
-  selectedValue,
-  onValueChange,
+  ratios = {},
+  onRatioChange,
   questionId,
 }) {
-  const scaleData = question[4][0][1];
-  const minValue = scaleData?.[0]?.[0] || 1;
-  const maxValue = scaleData?.[scaleData.length - 1]?.[0] || 5;
-  const minLabel = question[4][0][3];
-  const maxLabel = question[4][0][4];
+  const scaleOptions = question[4][0][1]; // Mảng các giá trị scale
+  const labels = question[4][0][3]; // [Ko hài lòng, Rất hài lòng]
+  const minLabel = labels?.[0] || "";
+  const maxLabel = labels?.[1] || "";
 
   return (
     <Box className="border-2 box-border rounded-2xl border-gray-300 !flex-row">
       <div className="flex flex-col items-start justify-center gap-2 w-[70%]">
-        <p>Giá trị cố định</p>
-        <div className="w-[90%] flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{minLabel || minValue}</span>
-            <InputNumber
-              min={minValue}
-              max={maxValue}
-              value={selectedValue}
-              onChange={onValueChange}
-              style={{ width: "80px" }}
-              disabled={isGenerate}
-            />
-            <span className="text-sm">{maxLabel || maxValue}</span>
+        <p>Tỷ lệ cố định</p>
+        {labels && minLabel && (
+          <div className="w-[90%] flex justify-between text-sm text-gray-600 mb-2">
+            <span>{minLabel}</span>
           </div>
+        )}
+        <div className="w-[90%] flex flex-col gap-2">
+          {scaleOptions.map((option, idx) => (
+            <div className="flex flex-row items-center gap-2" key={idx}>
+              <InputNumber
+                placeholder="Nhập tỷ lệ"
+                style={{ width: "20%" }}
+                min={0}
+                max={100}
+                value={ratios[idx] || 0}
+                onChange={(value) => onRatioChange && onRatioChange(idx, value)}
+                disabled={isGenerate}
+              />
+              <p className="w-[80%] overflow-auto wrap-break-word">
+                {option[0]}
+              </p>
+            </div>
+          ))}
         </div>
+        {labels && maxLabel && (
+          <div className="w-[90%] flex justify-between text-sm text-gray-600 mb-2">
+            <span>{maxLabel}</span>
+          </div>
+        )}
       </div>
       <AISection
         isGenerate={isGenerate}
@@ -590,8 +665,8 @@ function Question({
             isGenerate={answer?.ai_generate || false}
             setAIGenerated={handleAIChange}
             question={question}
-            selectedValue={answer?.content || ""}
-            onValueChange={handleAnswerChange}
+            ratios={answer?.ratios || {}}
+            onRatioChange={handleRatioChange}
             questionId={questionId}
           />
         );
