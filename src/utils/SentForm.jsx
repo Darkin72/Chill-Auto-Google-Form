@@ -1,3 +1,8 @@
+// Helper function to validate ratio values
+function isValidRatio(ratio) {
+  return Number.isInteger(ratio) && ratio >= 0 && ratio <= 100;
+}
+
 export function sendForm(answer) {
   // Kiểm tra xem có câu hỏi bắt buộc nào không
   let hasRequiredQuestions = false;
@@ -16,6 +21,43 @@ export function sendForm(answer) {
   // Validation cho các câu hỏi bắt buộc
   const errors = [];
 
+  // First: Validate ratios for ALL questions (required and non-required)
+  for (let questionId in answer) {
+    const answerData = answer[questionId];
+    const questionTitle = answerData.title || `Câu hỏi ${questionId}`;
+    const questionType = answerData.type;
+
+    // Skip AI generated answers
+    if (answerData.ai_generate) continue;
+
+    // Check ratio validation for questions with ratios
+    if ([2, 3, 4, 5, 18].includes(questionType)) {
+      const ratioEntries = Object.entries(answerData.ratios || {});
+      const invalidRatios = ratioEntries.filter(
+        ([, ratio]) => !isValidRatio(ratio)
+      );
+      if (invalidRatios.length > 0) {
+        errors.push(
+          ` - Câu hỏi "${questionTitle}": Tỷ lệ phải là số nguyên từ 0-100.`
+        );
+      }
+    }
+
+    // Check ratio validation for grid questions
+    if (questionType === 7) {
+      const gridRatios = answerData.gridRatios || {};
+      const invalidGridRatios = Object.entries(gridRatios).filter(
+        ([, ratio]) => !isValidRatio(ratio)
+      );
+      if (invalidGridRatios.length > 0) {
+        errors.push(
+          ` - Câu hỏi "${questionTitle}": Tỷ lệ phải là số nguyên từ 0-100.`
+        );
+      }
+    }
+  }
+
+  // Second: Validate required questions content
   for (let questionId in answer) {
     const answerData = answer[questionId];
 
@@ -39,9 +81,10 @@ export function sendForm(answer) {
 
     // Case 3: Questions with ratios - at least one ratio must be > 0
     if ([2, 3, 4, 5, 18].includes(questionType)) {
-      const ratioValues = Object.values(answerData.ratios || {});
-      const hasValidRatio = ratioValues.some((ratio) => ratio > 0);
+      const ratioEntries = Object.entries(answerData.ratios || {});
+      const ratioValues = ratioEntries.map(([, value]) => value);
 
+      const hasValidRatio = ratioValues.some((ratio) => ratio > 0);
       if (!hasValidRatio) {
         errors.push(
           ` - Câu hỏi "${questionTitle}" là bắt buộc và cần có ít nhất một lựa chọn có tỷ lệ lớn hơn 0.`

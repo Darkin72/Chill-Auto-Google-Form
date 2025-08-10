@@ -124,7 +124,6 @@ const FormModal = ({
                                 },
                               ]
                         }
-                        initialValue={0}
                       >
                         <InputNumber
                           min={0}
@@ -152,7 +151,6 @@ const FormModal = ({
                                 },
                               ]
                         }
-                        initialValue={0}
                       >
                         <InputNumber
                           min={0}
