@@ -6,6 +6,7 @@ import {
   InputNumber,
   DatePicker,
   TimePicker,
+  FloatButton,
 } from "antd";
 import apiRequest from "../utils/FormExtractorAPI";
 import Loading from "./Loading";
@@ -17,6 +18,7 @@ import {
 } from "@ant-design/icons";
 import { sendForm } from "../utils/SentForm";
 import FormModal from "./FormModal";
+import noti from "../components/Notification";
 const { TextArea } = Input;
 
 const QuestionTypes = {
@@ -183,17 +185,29 @@ function GoolgeFormView({ data, setData }) {
           </Button>
           <Button
             icon={<UndoOutlined />}
-            onClick={() => {
+            onClick={async (e) => {
+              e.preventDefault();
               setLoading(true);
-              apiRequest(data.link_edit)
-                .then((data) => {
-                  setData(data);
-                  setLoading(false);
-                })
-                .catch((error) => {
-                  console.error("Error:", error);
-                  setLoading(false);
-                });
+              try {
+                const res = await apiRequest(data.link_edit);
+                if (res.ok) {
+                  noti.success("Đã đồng bộ với form mới nhất !");
+                  setData(res.data);
+                } else {
+                  if (res.kind === "HTTP")
+                    noti.error(
+                      "Link không hợp lệ !",
+                      "Không tìm thấy form từ link của bạn !"
+                    );
+                  else
+                    noti.warning(
+                      "Lỗi mạng !",
+                      "Không thể kết nối tới máy chủ, vui lòng liên hệ để xử lý."
+                    );
+                }
+              } finally {
+                setLoading(false);
+              }
             }}
           >
             Đồng bộ dữ liệu
@@ -205,7 +219,7 @@ function GoolgeFormView({ data, setData }) {
           />
           <Button icon={<FileTextOutlined />}>Hướng dẫn sử dụng</Button>
         </div>
-        <div className="flex flex-row justify-center bg-blue-50 hover:shadow-md transition-all duration-200 border-purple-600 border-t-4 px-4 py-6 w-full rounded-4xl items-center">
+        <div className="flex flex-row justify-center bg-white hover:shadow-md transition-all duration-200 border-purple-600 border-t-4 px-4 py-6 w-full rounded-4xl items-center">
           <p className="text-[30px] text-left w-[80%] wrap-break-word">
             {data.title}
           </p>
@@ -247,6 +261,7 @@ function GoolgeFormView({ data, setData }) {
         loading={responseSentForm.loading}
         answer={answer}
       />
+      <FloatButton.BackTop />
     </>
   );
 }
@@ -280,7 +295,7 @@ function SentButton({ answer, setOpenSentFormModal, setResponseSentForm }) {
 function Box({ children, className = "" }) {
   return (
     <div
-      className={`flex flex-col items-start justify-items-start p-3 pb-5 gap-2 max-w-full bg-blue-50 ${className} hover:shadow-md transition-all duration-200`}
+      className={`flex flex-col items-start justify-items-start p-3 pb-5 gap-2 max-w-full bg-white ${className} hover:shadow-md transition-all duration-200`}
     >
       {children}
     </div>

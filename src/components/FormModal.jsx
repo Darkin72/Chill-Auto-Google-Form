@@ -1,6 +1,7 @@
 import { Alert, Form, Modal, Button, Space, InputNumber, Checkbox } from "antd";
 import { startSendForm } from "../utils/SentForm";
 import { useState } from "react";
+import noti from "./Notification";
 const FormModal = ({
   isModalOpen,
   setIsModalOpen,
@@ -53,19 +54,45 @@ const FormModal = ({
           {message.startsWith("Form đã sắn sàng để gửi !") && (
             <Form
               layout="vertical"
-              onFinish={(values) => {
+              onFinish={async (values) => {
                 console.log("Giá trị form:", values);
                 setSending(true);
-                startSendForm(answer, values)
-                  .then((data) => {
-                    console.log(data);
-                  })
-                  .catch((error) => {
-                    console.log(error);
-                  });
-                setTimeout(() => {
+                try {
+                  const res = await startSendForm(answer, values);
+                  if (res.ok) {
+                    noti.success(
+                      "Đã gửi form thành công!",
+                      "Form đã được gửi đến server."
+                    );
+                    console.log("Success:", res.data);
+                  } else {
+                    if (res.kind === "HTTP") {
+                      noti.error(
+                        "Lỗi từ server!",
+                        res.message || "Server trả về lỗi khi xử lý form."
+                      );
+                    } else if (res.kind === "TIMEOUT") {
+                      noti.warning(
+                        "Timeout!",
+                        "Request bị timeout, vui lòng thử lại."
+                      );
+                    } else {
+                      noti.warning(
+                        "Lỗi mạng!",
+                        "Không thể kết nối tới máy chủ, vui lòng liên hệ để xử lý."
+                      );
+                    }
+                    console.log("Error:", res);
+                  }
+                } catch (error) {
+                  noti.error(
+                    "Lỗi không xác định!",
+                    "Đã có lỗi xảy ra khi gửi form."
+                  );
+                  console.log("Unexpected error:", error);
+                } finally {
                   setSending(false);
-                }, 2000);
+                }
               }}
               initialValues={{
                 times: 1,

@@ -62,7 +62,7 @@ function NavBar() {
         <div className="flex flex-row gap-2">
           <NavBarButton to="/" icon={iconList.homeIcon} text="Trang chủ" />
           <NavBarButton
-            to="/introduce"
+            to="/formfill"
             icon={iconList.formIcon}
             text="Điền form"
           />

@@ -152,27 +152,105 @@ export function sendForm(answer) {
   return { success: true, message: "Form đã sắn sàng để gửi !" };
 }
 
-const api_endpoint = "http://localhost:8000/submit-answer";
+const api_endpoint = "http://localhost:8000";
 
-export async function startSendForm(answer, repeat) {
+/**
+ * Gửi form answer với timeout.
+ * @param {object} answer
+ * @param {number} repeat
+ * @param {number} timeoutMs  Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function startSendForm(answer, repeat, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     console.log("start send form");
-    const response = await fetch(api_endpoint, {
+    const resp = await fetch(api_endpoint + "/submit-answer", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ answer: answer, repeat: repeat }),
+      signal: controller.signal,
     });
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Form submitted successfully:", data);
-      return data;
-    } else {
-      console.error("Error submitting form:", response.statusText);
+    clearTimeout(timer);
+
+    const ct = resp.headers.get("content-type") || "";
+    const body = ct.includes("application/json")
+      ? await resp.json().catch(() => null)
+      : await resp.text().catch(() => null);
+
+    if (resp.ok) {
+      return { ok: true, data: body };
     }
-  } catch (error) {
-    console.error("Error:", error);
+    // Kết nối được nhưng server trả lỗi
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      resp.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: resp.status, message };
+  } catch (err) {
+    clearTimeout(timer);
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
+    // Network/CORS/server down/DNS…
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
   }
-  return null;
+}
+
+/**
+ * Gửi feedback với timeout.
+ * @param {object} feedback
+ * @param {number} timeoutMs  Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function sendFeedback(feedback, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    console.log("Starting send feedback", feedback);
+    const resp = await fetch(api_endpoint + "/submit-feedback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(feedback),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    const ct = resp.headers.get("content-type") || "";
+    const body = ct.includes("application/json")
+      ? await resp.json().catch(() => null)
+      : await resp.text().catch(() => null);
+
+    if (resp.ok) {
+      return { ok: true, data: body };
+    }
+    // Kết nối được nhưng server trả lỗi
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      resp.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: resp.status, message };
+  } catch (err) {
+    clearTimeout(timer);
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
+    // Network/CORS/server down/DNS…
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
+  }
 }
