@@ -174,7 +174,20 @@ export default function ContactPage() {
               subtitle="Tôi luôn sẵn sàng hỗ trợ bạn trong quá trình sử dụng. Đừng ngần ngại gửi câu hỏi hoặc góp ý!"
             />
             <div className="mt-6">
-              <Button href="#faq" className="!rounded-full">
+              <Button
+                href="#faq"
+                className="!rounded-full"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const faqSection = document.getElementById("faq");
+                  if (faqSection) {
+                    faqSection.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }
+                }}
+              >
                 Xem FAQ
               </Button>
             </div>
