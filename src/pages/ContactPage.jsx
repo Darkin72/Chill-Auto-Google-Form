@@ -10,7 +10,6 @@ import {
   StarFilled,
   CheckCircleFilled,
 } from "@ant-design/icons";
-import Footer from "../components/Footer";
 import { sendFeedback } from "../utils/SentForm";
 import noti from "../components/Notification";
 
@@ -393,9 +392,6 @@ export default function ContactPage() {
           </Card>
         </motion.div>
       </section>
-
-      {/* Footer (dùng component chung) */}
-      <Footer />
     </div>
   );
 }

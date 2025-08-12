@@ -1,7 +1,18 @@
+import { useContext } from "react";
+import { DataContext } from "../context/DataContext";
+
 function NotFoundPage() {
+  const { data, setData } = useContext(DataContext);
   return (
     <>
-      <h1>THIS IS NOT FOUND PAGE</h1>
+      <button
+        onClick={() => {
+          setData("HELLO");
+          console.log("Data", data);
+        }}
+      >
+        Hello
+      </button>
     </>
   );
 }

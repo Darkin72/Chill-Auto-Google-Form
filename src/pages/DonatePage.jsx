@@ -10,7 +10,6 @@ import {
   CopyOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import Footer from "../components/Footer";
 import qr from "/qr.jpg";
 import cf from "/coffee.png";
 
@@ -394,9 +393,6 @@ function DonatePage() {
           </Card>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

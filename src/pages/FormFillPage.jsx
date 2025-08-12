@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Input, Button, Card, Tag } from "antd";
 import { motion } from "framer-motion";
 import { SearchOutlined, StarFilled } from "@ant-design/icons";
@@ -6,19 +6,13 @@ import Loading from "../components/Loading";
 import GoolgeFormView from "../components/GoogleFormView";
 import apiRequest from "../utils/FormExtractorAPI";
 import noti from "../components/Notification";
-import Footer from "../components/Footer";
+import { DataContext } from "../context/DataContext";
 const { Search } = Input;
 
 // ===== Animations =====
 const fadeDown = {
   initial: { opacity: 0, y: -16 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
-
-const fadeIn = {
-  initial: { opacity: 0 },
-  whileInView: { opacity: 1, transition: { duration: 0.4 } },
-  viewport: { once: true, amount: 0.2 },
 };
 
 const scaleIn = {
@@ -50,7 +44,7 @@ function SectionHeading({ eyebrow, title, subtitle }) {
 
 function FormFillPage() {
   const [link, setLink] = useState("");
-  const [data, setData] = useState(null);
+  const { data, setData } = useContext(DataContext);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -185,11 +179,8 @@ function FormFillPage() {
           </section>
         </>
       ) : (
-        <motion.div {...fadeIn}>
-          <GoolgeFormView data={data} setData={setData} />
-        </motion.div>
+        <GoolgeFormView data={data} setData={setData} />
       )}
-      <Footer />
     </div>
   );
 }

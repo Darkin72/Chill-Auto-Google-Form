@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import Footer from "../components/Footer";
 import HeroSection from "../components/HeroSection";
 import FeaturesSection from "../components/FeaturesSection";
 import HowItWorksSection from "../components/HowItWorksSection";
@@ -32,9 +31,6 @@ export default function HomePage() {
 
       {/* ===== CTA ===== */}
       <CTASection ctaRef={ctaRef} scrollTo={scrollTo} featRef={featRef} />
-
-      {/* ===== FOOTER ===== */}
-      <Footer />
     </div>
   );
 }
