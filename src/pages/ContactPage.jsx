@@ -315,8 +315,8 @@ export default function ContactPage() {
                     </Form.Item>
 
                     <div className="flex items-center justify-between gap-3">
-                      <Tag color="blue" className="rounded-full">
-                        Phản hồi qua email sớm nhất có thể.
+                      <Tag color="red" className="rounded-full">
+                        This form is a demo form. NOT WORKING.
                       </Tag>
                       <Button
                         type="primary"

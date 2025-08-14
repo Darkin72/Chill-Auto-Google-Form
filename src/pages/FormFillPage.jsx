@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Input, Button, Card, Tag } from "antd";
 import { motion } from "framer-motion";
 import { SearchOutlined, StarFilled } from "@ant-design/icons";
@@ -52,6 +52,11 @@ function FormFillPage() {
     setLink("");
     setLoading(false);
   }
+
+  useEffect(() => {
+    // Lên đầu khi data thay đổi.
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [data]);
 
   return (
     <div className="min-h-screen scroll-smooth bg-gradient-to-b from-[#eff6ff] via-[#dbeafe] to-white/90 text-gray-700">
@@ -179,7 +184,7 @@ function FormFillPage() {
           </section>
         </>
       ) : (
-        <GoolgeFormView data={data} setData={setData} />
+        <GoolgeFormView link={link} />
       )}
     </div>
   );

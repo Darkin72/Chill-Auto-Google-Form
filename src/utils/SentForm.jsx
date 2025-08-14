@@ -5,6 +5,7 @@ function isValidRatio(ratio) {
 
 export function sendForm(answer) {
   // Kiểm tra xem có câu hỏi bắt buộc nào không
+  console.log("Answer not valid yet", answer);
   let hasRequiredQuestions = false;
   for (let id in answer) {
     if (answer[id]["mustAnswer"]) {
@@ -90,6 +91,17 @@ export function sendForm(answer) {
           ` - Câu hỏi "${questionTitle}" là bắt buộc và cần có ít nhất một lựa chọn có tỷ lệ lớn hơn 0.`
         );
       }
+
+      // Check otherValue validation for required questions
+      const otherOptionRatio = answerData.ratios[""] || 0;
+      if (
+        otherOptionRatio > 0 &&
+        (!answerData.otherValue || answerData.otherValue.trim() === "")
+      ) {
+        errors.push(
+          ` - Câu hỏi "${questionTitle}": Tùy chọn "Khác" có tỷ lệ khác 0 nhưng nội dung trống. Vui lòng nhập nội dung cho tùy chọn "Khác".`
+        );
+      }
       continue;
     }
 
@@ -141,7 +153,7 @@ export function sendForm(answer) {
     return {
       success: false,
       errors: errors,
-      message: `Vui lòng hoàn thành các câu hỏi bắt buộc:\n${errors.join(
+      message: `Vui lòng điền đầy đủ thông tin để form có thể gửi đi:\n${errors.join(
         "\n"
       )}`,
     };

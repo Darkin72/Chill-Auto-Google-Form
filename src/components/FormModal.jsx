@@ -110,20 +110,18 @@ const FormModal = ({
                   { required: true, message: "Vui lòng nhập số lần!" },
                   {
                     validator: (_, v) =>
-                      Number.isInteger(v) && v >= 1 && v <= 1000
+                      Number.isInteger(v) && v >= 1 && v <= 50
                         ? Promise.resolve()
-                        : Promise.reject(
-                            new Error("Chỉ nhận số nguyên 0–1000")
-                          ),
+                        : Promise.reject(new Error("Chỉ nhận số nguyên 1–50")),
                   },
                 ]}
               >
-                <InputNumber min={0} max={1000} step={1} />
+                <InputNumber min={1} max={50} step={1} />
               </Form.Item>
               <Form.Item
                 name="randomize"
                 valuePropName="checked"
-                extra="Đảm bảo điền đúng số lượng form trong nhiều nhất là 2 ngày"
+                extra="Đảm bảo điền đúng số lượng form trong 10 tiếng"
               >
                 <Checkbox>Thời gian điền form ngẫu nhiên</Checkbox>
               </Form.Item>
@@ -145,46 +143,19 @@ const FormModal = ({
                             : [
                                 {
                                   validator: (_, v) =>
-                                    Number.isInteger(v) && v >= 0 && v <= 59
+                                    Number.isInteger(v) && v >= 1 && v <= 59
                                       ? Promise.resolve()
-                                      : Promise.reject(new Error("Phút 0–59")),
+                                      : Promise.reject(new Error("Phút 1–12")),
                                 },
                               ]
                         }
                       >
                         <InputNumber
-                          min={0}
-                          max={59}
+                          min={1}
+                          max={12}
                           step={1}
                           disabled={disabled}
                           addonAfter="phút"
-                          style={{ width: 160 }}
-                        />
-                      </Form.Item>
-
-                      <Form.Item
-                        noStyle
-                        name={["repeat", "hours"]}
-                        dependencies={["randomize"]}
-                        rules={
-                          disabled
-                            ? []
-                            : [
-                                {
-                                  validator: (_, v) =>
-                                    Number.isInteger(v) && v >= 0 && v <= 23
-                                      ? Promise.resolve()
-                                      : Promise.reject(new Error("Giờ 0–23")),
-                                },
-                              ]
-                        }
-                      >
-                        <InputNumber
-                          min={0}
-                          max={23}
-                          step={1}
-                          disabled={disabled}
-                          addonAfter="giờ"
                           style={{ width: 160 }}
                         />
                       </Form.Item>
