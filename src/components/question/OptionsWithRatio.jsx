@@ -24,7 +24,7 @@ function OptionsWithRatio({
             {options.map((option, idx) => (
               <div className="flex items-center gap-3" key={idx}>
                 <InputNumber
-                  placeholder="Tỷ lệ %"
+                  placeholder="Tỷ lệ"
                   className="!rounded-xl"
                   style={{ width: "100px" }}
                   min={0}

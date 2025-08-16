@@ -9,6 +9,8 @@ import {
   MessageOutlined,
   MenuOutlined,
   CloseOutlined,
+  InboxOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 
 const size = "text-xl";
@@ -19,6 +21,8 @@ const iconList = {
   contactIcon: <MessageOutlined className={size} />,
   menuIcon: <MenuOutlined className={size} />,
   closeIcon: <CloseOutlined className={size} />,
+  storageIcon: <InboxOutlined className={size} />,
+  progressIcon: <DashboardOutlined className={size} />,
 };
 
 function NavBar() {
@@ -52,6 +56,16 @@ function NavBar() {
                 to="/formfill"
                 icon={iconList.formIcon}
                 text="Điền form"
+              />
+              <NavBarButton
+                to="/storage"
+                icon={iconList.storageIcon}
+                text="Lưu trữ"
+              />
+              <NavBarButton
+                to="/progress"
+                icon={iconList.progressIcon}
+                text="Tiến trình"
               />
               <NavBarButton
                 to="/contact"
@@ -113,6 +127,20 @@ function NavBar() {
                   to="/formfill"
                   icon={iconList.formIcon}
                   text="Điền form"
+                  isMobile
+                  onClick={() => setIsMobileMenuOpen(false)}
+                />
+                <NavBarButton
+                  to="/storage"
+                  icon={iconList.storageIcon}
+                  text="Lưu trữ"
+                  isMobile
+                  onClick={() => setIsMobileMenuOpen(false)}
+                />
+                <NavBarButton
+                  to="/progress"
+                  icon={iconList.progressIcon}
+                  text="Tiến trình"
                   isMobile
                   onClick={() => setIsMobileMenuOpen(false)}
                 />

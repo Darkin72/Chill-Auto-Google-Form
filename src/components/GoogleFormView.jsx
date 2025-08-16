@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { Switch, Button, FloatButton, Card } from "antd";
 import apiRequest from "../utils/FormExtractorAPI";
 import Loading from "./Loading";
@@ -16,6 +17,7 @@ import FormModal from "./FormModal";
 import noti from "../components/Notification";
 import { DataContext } from "../context/DataContext";
 import { Question } from "./question";
+import GridGroupQuestion from "./question/GridGroupQuestion";
 
 const QuestionTypes = {
   0: "Trả lời ngắn",
@@ -43,7 +45,6 @@ function GoolgeFormView() {
     updateAnswerAI,
     updateAnswerRatios,
     updateAnswerOther,
-    updateAnswerGridRatios,
     getAnswerAsObject,
   } = useContext(DataContext);
 
@@ -84,6 +85,13 @@ function GoolgeFormView() {
     },
     [answer, updateAnswerAI]
   );
+
+  const navigate = useNavigate();
+  // Handle submit final form
+  const handleSubmitFinalForm = () => {
+    navigate("/progress");
+    setData(null);
+  };
 
   // Add safety check after all hooks
   if (!data || !data.questions) {
@@ -206,27 +214,49 @@ function GoolgeFormView() {
         {/* Questions section */}
         <div className="space-y-6 pt-6">
           {data.questions.map((question, index) => {
-            const questionId = question?.[4]?.[0]?.[0];
-            const questionAnswer = answer.find(
-              (item) => item.questionId === questionId
-            );
+            if (question[3] === 7) {
+              // Grid questions: Render as grouped questions
+              const gridRows = answer.filter(
+                (item) => item.parentIndex === index && item.parentType === 7
+              );
 
-            return (
-              <div
-                key={questionId || index}
-                className="border border-gray-200 rounded-xl p-6 bg-white"
-              >
-                <Question
-                  question={question}
-                  answer={questionAnswer}
-                  updateAnswerContent={updateAnswerContent}
-                  updateAnswerAI={updateAnswerAI}
-                  updateAnswerRatios={updateAnswerRatios}
-                  updateAnswerOther={updateAnswerOther}
-                  updateAnswerGridRatios={updateAnswerGridRatios}
-                />
-              </div>
-            );
+              return (
+                <div
+                  key={`grid-${index}`}
+                  className="border border-gray-200 rounded-xl p-6 bg-white"
+                >
+                  <GridGroupQuestion
+                    question={question}
+                    gridRows={gridRows}
+                    updateAnswerRatios={updateAnswerRatios}
+                    updateAnswerAI={updateAnswerAI}
+                    updateAnswerOther={updateAnswerOther}
+                  />
+                </div>
+              );
+            } else {
+              // Non-grid questions: Render normally
+              const questionId = question?.[4]?.[0]?.[0];
+              const questionAnswer = answer.find(
+                (item) => item.questionId === questionId
+              );
+
+              return (
+                <div
+                  key={questionId || index}
+                  className="border border-gray-200 rounded-xl p-6 bg-white"
+                >
+                  <Question
+                    question={question}
+                    answer={questionAnswer}
+                    updateAnswerContent={updateAnswerContent}
+                    updateAnswerAI={updateAnswerAI}
+                    updateAnswerRatios={updateAnswerRatios}
+                    updateAnswerOther={updateAnswerOther}
+                  />
+                </div>
+              );
+            }
           })}
         </div>
 
@@ -257,6 +287,9 @@ function GoolgeFormView() {
         message={responseSentForm.message}
         loading={responseSentForm.loading}
         answer={getAnswerAsObject()}
+        link={data.link_edit}
+        title={data.title}
+        handleSubmitFinalForm={handleSubmitFinalForm}
       />
 
       {/* Floating buttons */}

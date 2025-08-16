@@ -34,7 +34,6 @@ function Question({
   updateAnswerAI,
   updateAnswerRatios,
   updateAnswerOther,
-  updateAnswerGridRatios,
 }) {
   const questionType = question[3];
   const questionId = question?.[4]?.[0]?.[0];
@@ -70,17 +69,6 @@ function Question({
     [questionId, updateAnswerOther]
   );
 
-  const handleGridRatioChange = useCallback(
-    (rowIdx, optIdx, value) => {
-      const newGridRatios = {
-        ...answer?.gridRatios,
-        [`${rowIdx}-${optIdx}`]: value,
-      };
-      updateAnswerGridRatios(questionId, newGridRatios);
-    },
-    [questionId, answer?.gridRatios, updateAnswerGridRatios]
-  );
-
   // Không render gì cho description sections
   if (NonRenderQuestionTypes.includes(questionType)) {
     return null;
@@ -88,7 +76,7 @@ function Question({
 
   // Render question header cho tất cả types trừ 6 và 8 (description sections)
   const questionHeader = ![6, 8].includes(questionType) ? (
-    <QuestionHeader question={question} />
+    <QuestionHeader question={question} answer={answer} />
   ) : null;
 
   // Render question content dựa trên type
@@ -169,18 +157,6 @@ function Question({
             hasOtherOption={false}
             ratios={answer?.ratios || {}}
             onRatioChange={handleRatioChange}
-            questionId={questionId}
-          />
-        );
-
-      case 7: // Grid
-        return (
-          <GridQuestion
-            question={question}
-            isGenerate={answer?.ai_generate || false}
-            setAIGenerated={handleAIChange}
-            gridRatios={answer?.gridRatios || {}}
-            onGridRatioChange={handleGridRatioChange}
             questionId={questionId}
           />
         );
@@ -267,7 +243,10 @@ const MemoizedQuestion = memo(Question, (prevProps, nextProps) => {
     prevAnswer?.content !== nextAnswer?.content ||
     prevAnswer?.ratios !== nextAnswer?.ratios ||
     prevAnswer?.otherValue !== nextAnswer?.otherValue ||
-    prevAnswer?.gridRatios !== nextAnswer?.gridRatios
+    prevAnswer?.gridRatios !== nextAnswer?.gridRatios ||
+    prevAnswer?.mustAnswer !== nextAnswer?.mustAnswer ||
+    prevAnswer?.title !== nextAnswer?.title ||
+    prevAnswer?.type !== nextAnswer?.type
   ) {
     return false; // Re-render
   }

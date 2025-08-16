@@ -8,7 +8,7 @@ function GridQuestion({
   setAIGenerated,
   gridRatios = {},
   onGridRatioChange,
-  questionId,
+  questionId, // Đây sẽ là array cho grid questions
 }) {
   return (
     <Box>
@@ -25,7 +25,7 @@ function GridQuestion({
                   {row[1].map((option, optIdx) => (
                     <div className="flex items-center gap-3" key={optIdx}>
                       <InputNumber
-                        placeholder="Tỷ lệ %"
+                        placeholder="Tỷ lệ"
                         className="!rounded-xl"
                         style={{ width: "100px" }}
                         min={0}
@@ -59,7 +59,7 @@ function GridQuestion({
         <AISection
           isGenerate={isGenerate}
           setAIGenerated={setAIGenerated}
-          questionId={questionId}
+          questionId={questionId} // Truyền array questionIds
         />
       </div>
     </Box>

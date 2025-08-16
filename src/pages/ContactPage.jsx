@@ -316,7 +316,7 @@ export default function ContactPage() {
 
                     <div className="flex items-center justify-between gap-3">
                       <Tag color="red" className="rounded-full">
-                        This form is a demo form. NOT WORKING.
+                        Only on web version.
                       </Tag>
                       <Button
                         type="primary"

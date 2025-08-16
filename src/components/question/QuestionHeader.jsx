@@ -1,7 +1,7 @@
 import { StarFilled } from "@ant-design/icons";
 import Box from "./Box";
 
-function QuestionHeader({ question }) {
+function QuestionHeader({ question, answer }) {
   return (
     <Box className="mb-4">
       <div className="flex items-start gap-4">
@@ -12,7 +12,7 @@ function QuestionHeader({ question }) {
           <h3 className="text-lg font-semibold text-gray-900 leading-tight">
             {question[1]}
           </h3>
-          {question?.[4]?.[0]?.[2] === 1 ? (
+          {answer?.mustAnswer === 1 ? (
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-red-50 text-red-700 px-2 py-1 text-xs ring-1 ring-red-200">
               <span>
                 {question[3] === 7

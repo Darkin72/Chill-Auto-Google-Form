@@ -26,7 +26,9 @@ function AISection({
         <Switch
           checked={isGenerate}
           onChange={setAIGenerated}
-          data-question-id={questionId}
+          data-question-id={
+            Array.isArray(questionId) ? JSON.stringify(questionId) : questionId
+          }
           size="default"
         />
       </div>

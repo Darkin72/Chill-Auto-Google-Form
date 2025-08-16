@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "./FormExtractorAPI.jsx";
+
 // Helper function to validate ratio values
 function isValidRatio(ratio) {
   return Number.isInteger(ratio) && ratio >= 0 && ratio <= 100;
@@ -173,21 +175,31 @@ const api_endpoint = "http://localhost:8000";
  * @param {number} timeoutMs  Thời gian timeout (ms)
  * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
  */
-export async function startSendForm(answer, repeat, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
+export async function startSendForm(
+  answer,
+  repeat,
+  link,
+  title,
+  timeoutMs = 8000
+) {
   try {
-    console.log("start send form");
-    const resp = await fetch(api_endpoint + "/submit-answer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    console.log("start send form", title);
+    const resp = await fetchWithTimeout(
+      api_endpoint + "/submit-answer",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          answer: answer,
+          repeat: repeat,
+          link: link,
+          title: title,
+        }),
       },
-      body: JSON.stringify({ answer: answer, repeat: repeat }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
+      timeoutMs
+    );
 
     const ct = resp.headers.get("content-type") || "";
     const body = ct.includes("application/json")
@@ -204,7 +216,6 @@ export async function startSendForm(answer, repeat, timeoutMs = 8000) {
       "HTTP error";
     return { ok: false, kind: "HTTP", status: resp.status, message };
   } catch (err) {
-    clearTimeout(timer);
     if (err?.name === "AbortError") {
       return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
     }
@@ -224,20 +235,19 @@ export async function startSendForm(answer, repeat, timeoutMs = 8000) {
  * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
  */
 export async function sendFeedback(feedback, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
     console.log("Starting send feedback", feedback);
-    const resp = await fetch(api_endpoint + "/submit-feedback", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const resp = await fetchWithTimeout(
+      api_endpoint + "/submit-feedback",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedback),
       },
-      body: JSON.stringify(feedback),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
+      timeoutMs
+    );
 
     const ct = resp.headers.get("content-type") || "";
     const body = ct.includes("application/json")
@@ -254,7 +264,6 @@ export async function sendFeedback(feedback, timeoutMs = 8000) {
       "HTTP error";
     return { ok: false, kind: "HTTP", status: resp.status, message };
   } catch (err) {
-    clearTimeout(timer);
     if (err?.name === "AbortError") {
       return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
     }

@@ -9,3 +9,4 @@ export { default as TimeInput } from './TimeInput';
 export { default as OptionsWithRatio } from './OptionsWithRatio';
 export { default as LinearScaleInput } from './LinearScaleInput';
 export { default as GridQuestion } from './GridQuestion';
+export { default as GridGroupQuestion } from './GridGroupQuestion';

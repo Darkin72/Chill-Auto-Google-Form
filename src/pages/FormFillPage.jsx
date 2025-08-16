@@ -184,7 +184,7 @@ function FormFillPage() {
           </section>
         </>
       ) : (
-        <GoolgeFormView link={link} />
+        <GoolgeFormView />
       )}
     </div>
   );

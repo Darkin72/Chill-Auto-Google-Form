@@ -6,6 +6,8 @@ import FormFillPage from "./pages/FormFillPage";
 import ContactPage from "./pages/ContactPage";
 import DonatePage from "./pages/DonatePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import StoragePage from "./pages/StoragePage";
+import ProgressPage from "./pages/ProgressPage";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +19,8 @@ const router = createBrowserRouter([
       { path: "formfill", element: <FormFillPage /> },
       { path: "contact", element: <ContactPage /> },
       { path: "donate", element: <DonatePage /> },
+      { path: "storage", element: <StoragePage /> },
+      { path: "progress", element: <ProgressPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

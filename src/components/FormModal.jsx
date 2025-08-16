@@ -3,11 +3,14 @@ import { startSendForm } from "../utils/SentForm";
 import { useState } from "react";
 import noti from "./Notification";
 const FormModal = ({
+  link,
   isModalOpen,
   setIsModalOpen,
   message = "Hello",
   loading,
   answer,
+  title,
+  handleSubmitFinalForm,
 }) => {
   const [sending, setSending] = useState(false);
   const handleOk = () => {
@@ -58,13 +61,14 @@ const FormModal = ({
                 console.log("Giá trị form:", values);
                 setSending(true);
                 try {
-                  const res = await startSendForm(answer, values);
+                  const res = await startSendForm(answer, values, link, title);
                   if (res.ok) {
                     noti.success(
                       "Đã gửi form thành công!",
                       "Form đã được gửi đến server."
                     );
                     console.log("Success:", res.data);
+                    handleSubmitFinalForm();
                   } else {
                     if (res.kind === "HTTP") {
                       noti.error(

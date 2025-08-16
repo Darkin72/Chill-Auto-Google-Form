@@ -3,10 +3,45 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { DataContext } from "./DataContext";
 
 function generateBlankAnswer(data) {
-  return data?.questions
-    ? data.questions
-        .filter((q) => q[4]?.[0]?.[0] || q[3] === 8) // Lấy những câu hỏi có ID hoặc type = 8
-        .map((q, index) => ({
+  const result = [];
+
+  if (!data?.questions) return result;
+
+  data.questions
+    .filter((q) => q[4]?.[0]?.[0] || q[3] === 8) // Lấy những câu hỏi có ID hoặc type = 8
+    .forEach((q, index) => {
+      if (q[3] === 7) {
+        // Grid questions: Tạo separate answer object cho mỗi hàng
+        const gridMustAnswer = q[4]?.[0]?.[2] || 0; // mustAnswer của toàn bộ grid
+        q[4].forEach((row, rowIndex) => {
+          const rowQuestionId = row[0];
+          if (rowQuestionId) {
+            result.push({
+              questionId: rowQuestionId,
+              index: `${index}-${rowIndex}`, // Unique index cho mỗi hàng
+              title: row[3][0], // Tên của hàng
+              content: "",
+              ai_generate: false,
+              mustAnswer: gridMustAnswer, // Tất cả hàng có cùng mustAnswer như grid chính
+              type: q[4]?.[0]?.[11]?.[0] === 1 ? 4 : 2, // Treat như multiple choice/checkbox
+              parentType: 7, // Original type để biết đây là grid row
+              parentIndex: index, // Index của parent grid question
+              parentTitle: q[1], // Title của parent grid question
+              rowIndex: rowIndex, // Index của hàng trong grid
+              parentMustAnswer: gridMustAnswer, // Store grid's mustAnswer
+              ratios: (() => {
+                // Tạo ratios cho options của hàng này
+                const options = row[1] || [];
+                return Object.fromEntries(options.map((val) => [val[0], 0]));
+              })(),
+              otherValue: "",
+              kind: null,
+            });
+          }
+        });
+      } else {
+        // Non-grid questions: giữ nguyên logic cũ
+        result.push({
           questionId: q[4]?.[0]?.[0] || null,
           index: index,
           title: q[1],
@@ -23,21 +58,6 @@ function generateBlankAnswer(data) {
             return {};
           })(),
           otherValue: "",
-          gridRatios: (() => {
-            // Tạo gridRatios mặc định cho Grid questions (type 7)
-            if (q[3] === 7) {
-              const gridRatios = {};
-              q[4].forEach((row, rowIdx) => {
-                if (row[1]) {
-                  row[1].forEach((_, optIdx) => {
-                    gridRatios[`${rowIdx}-${optIdx}`] = 0;
-                  });
-                }
-              });
-              return gridRatios;
-            }
-            return {};
-          })(),
           kind: (() => {
             // Special value for Date, time and grid to classify
             // Date
@@ -48,14 +68,14 @@ function generateBlankAnswer(data) {
             if (q[3] === 10) {
               return q[4]?.[0]?.[6] || null;
             }
-            // Grid
-            if (q[3] === 7) {
-              return q[4]?.[0]?.[11] || null;
-            }
             return null;
           })(),
-        }))
-    : [];
+        });
+      }
+    });
+
+  console.log("Generated answer objects (new grid approach):", result);
+  return result;
 }
 
 export function DataProvider({ children }) {
@@ -98,7 +118,22 @@ export function DataProvider({ children }) {
         return false;
       });
 
-      if (hasNewQuestions || hasKindChanges) {
+      // Kiểm tra các thay đổi khác (mustAnswer, title, type, etc.)
+      const hasOtherChanges = newInitialAnswer.some((newItem) => {
+        const existingItem = prev.find(
+          (p) => p.questionId === newItem.questionId
+        );
+        if (existingItem) {
+          return (
+            existingItem.mustAnswer !== newItem.mustAnswer ||
+            existingItem.title !== newItem.title ||
+            existingItem.type !== newItem.type
+          );
+        }
+        return false;
+      });
+
+      if (hasNewQuestions || hasKindChanges || hasOtherChanges) {
         // Merge giữ lại các giá trị cũ và thêm các câu hỏi mới
         const merged = [...newInitialAnswer];
         newInitialAnswer.forEach((newItem, index) => {
