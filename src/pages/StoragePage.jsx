@@ -1,16 +1,25 @@
-import { useState, useEffect } from "react";
-import { Table, Tag, Button, Progress, Tooltip, message, Card } from "antd";
-import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
+import { useState, useEffect, useRef } from "react";
+import {
+  Table,
+  Tag,
+  Button,
+  Progress,
+  Tooltip,
+  message,
+  Card,
+  Popconfirm,
+} from "antd";
+import { CopyOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import AnswerModal from "../components/AnswerModal";
-import { getForms } from "../utils/DatabaseConnector";
+import { getForms, countForms, deleteForm } from "../utils/DatabaseConnector";
 
 const statusMap = {
   QUEUED: { color: "orange", text: "Chờ xử lý" },
   RUNNING: { color: "blue", text: "Đang chạy" },
-  COMPLETED: { color: "green", text: "Hoàn thành" },
+  SUCCEEDED: { color: "green", text: "Hoàn thành" },
   FAILED: { color: "red", text: "Thất bại" },
-  CANCELLED: { color: "red", text: "Đã hủy" },
+  CANCELED: { color: "red", text: "Đã hủy" },
   // Fallback cho các status cũ
   running: { color: "blue", text: "Đang chạy" },
   done: { color: "green", text: "Hoàn thành" },
@@ -22,55 +31,179 @@ const fadeDown = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-async function fetchData() {
-  try {
-    const result = await getForms({
-      limit: 10, // Mỗi trang 10 form
-      offset: 0,
-    });
+// Helper function để chuyển đổi tableParams thành API params
+const getApiParams = (tableParams) => {
+  const { pagination, filters, sortField, sortOrder, ...restParams } =
+    tableParams;
+  const result = {};
 
-    if (result.ok) {
-      return result.data || [];
-    } else {
-      console.error("Error fetching forms:", result.message);
-      message.error(`Lỗi tải dữ liệu: ${result.message}`);
-      return [];
-    }
-  } catch (error) {
-    console.error("Error in fetchData:", error);
-    message.error("Lỗi kết nối, vui lòng thử lại!");
-    return [];
+  // Pagination
+  result.limit = pagination?.pageSize || 10;
+  result.offset = ((pagination?.current || 1) - 1) * result.limit;
+
+  // Filters (nếu có)
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        result[key] = value;
+      }
+    });
   }
-}
+
+  // Sorting (nếu có)
+  if (sortField) {
+    result.orderBy = sortField;
+    result.order = sortOrder === "ascend" ? "asc" : "desc";
+  }
+
+  // Các tham số khác
+  Object.entries(restParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      result[key] = value;
+    }
+  });
+
+  return result;
+};
 
 function StoragePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [tableParams, setTableParams] = useState({
+    pagination: {
+      current: 1,
+      pageSize: 10,
+      showSizeChanger: false,
+      showQuickJumper: true,
+      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} forms`,
+    },
+  });
 
-  // Fetch data on mount
-  useEffect(() => {
-    const loadData = async () => {
+  // Extract primitive values for useEffect dependency
+  const currentPage = tableParams.pagination?.current;
+  const pageSize = tableParams.pagination?.pageSize;
+
+  // Ref để lưu polling interval
+  const pollingInterval = useRef(null);
+
+  // Hàm fetch data có thể tái sử dụng
+  const fetchData = async (showLoadingIndicator = true) => {
+    if (showLoadingIndicator) {
       setLoading(true);
-      try {
-        const forms = await fetchData();
-        setData(forms);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        message.error("Không thể tải dữ liệu!");
+    }
+
+    try {
+      const apiParams = getApiParams(tableParams);
+
+      // Fetch forms và count cùng lúc
+      const [formsResult, countResult] = await Promise.all([
+        getForms(apiParams),
+        countForms(apiParams),
+      ]);
+
+      if (formsResult.ok) {
+        setData(formsResult.data || []);
+      } else {
+        console.error("Error fetching forms:", formsResult.message);
+        if (showLoadingIndicator) {
+          message.error(`Lỗi tải dữ liệu: ${formsResult.message}`);
+        }
         setData([]);
-      } finally {
+      }
+
+      if (countResult.ok) {
+        const totalCount = countResult.data || 0;
+        setTableParams((prevParams) => ({
+          ...prevParams,
+          pagination: {
+            ...prevParams.pagination,
+            total: totalCount,
+          },
+        }));
+      } else {
+        console.error("Error counting forms:", countResult.message);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      if (showLoadingIndicator) {
+        message.error("Lỗi kết nối, vui lòng thử lại!");
+      }
+      setData([]);
+    } finally {
+      if (showLoadingIndicator) {
         setLoading(false);
       }
-    };
+    }
+  };
 
-    loadData();
-  }, []);
+  // Load data on mount và khi pagination thay đổi
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize]);
+
+  // Polling effect - cập nhật mỗi 5 giây
+  useEffect(() => {
+    // Clear existing interval
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+    }
+
+    // Set up new polling interval
+    pollingInterval.current = setInterval(() => {
+      // Polling không hiển thị loading indicator để không làm phiền user
+      fetchData(false);
+    }, 5000); // 5 giây
+
+    // Cleanup interval khi component unmount hoặc dependencies thay đổi
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize]);
+
+  // Handle table change (pagination, filters, sorter)
+  const handleTableChange = (pagination, filters, sorter) => {
+    setTableParams({
+      pagination,
+      filters,
+      sortOrder: Array.isArray(sorter) ? undefined : sorter.order,
+      sortField: Array.isArray(sorter) ? undefined : sorter.field,
+    });
+
+    // Clear data nếu pageSize thay đổi
+    if (pagination.pageSize !== tableParams.pagination?.pageSize) {
+      setData([]);
+    }
+  };
 
   const handleCopy = (link) => {
     navigator.clipboard.writeText(link);
     message.success("Đã sao chép link!");
+  };
+
+  const handleDeleteForm = async (formId, title) => {
+    try {
+      setLoading(true);
+      const result = await deleteForm(formId);
+
+      if (result.ok) {
+        message.success(`Đã xóa form "${title}" thành công!`);
+        // Refresh lại data sau khi xóa thành công
+        await fetchData(false);
+      } else {
+        message.error(`Lỗi xóa form: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error deleting form:", error);
+      message.error("Lỗi kết nối khi xóa form!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -189,6 +322,32 @@ function StoragePage() {
         </span>
       ),
     },
+    {
+      title: "Thao tác",
+      key: "action",
+      width: 100,
+      align: "center",
+      render: (_, record) => (
+        <Popconfirm
+          title="Xóa form"
+          description={`Bạn có chắc chắn muốn xóa form "${record.title}"?`}
+          onConfirm={() => handleDeleteForm(record.id, record.title)}
+          okText="Xóa"
+          cancelText="Hủy"
+          okType="danger"
+        >
+          <Tooltip title="Xóa form">
+            <Button
+              icon={<DeleteOutlined />}
+              size="small"
+              type="text"
+              danger
+              className="hover:bg-red-50"
+            />
+          </Tooltip>
+        </Popconfirm>
+      ),
+    },
   ];
 
   return (
@@ -226,16 +385,11 @@ function StoragePage() {
               columns={columns}
               dataSource={data}
               rowKey="id"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: false,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} của ${total} forms`,
-              }}
+              pagination={tableParams.pagination}
+              loading={loading}
+              onChange={handleTableChange}
               scroll={{ x: true }}
               className="mt-4"
-              loading={loading}
             />
           </Card>
         </div>

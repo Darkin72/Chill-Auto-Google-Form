@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from "./FormExtractorAPI.jsx";
+import { fetchWithTimeout } from "./FormExtractorAPI";
 
 // Helper function to validate ratio values
 function isValidRatio(ratio) {

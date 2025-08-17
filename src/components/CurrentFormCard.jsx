@@ -18,10 +18,17 @@ function CurrentFormCard({ form }) {
   }
 
   const statusMap = {
-    processing: { color: "green", text: "Đang xử lý" },
-    pending: { color: "gold", text: "Đang chờ" },
-    error: { color: "red", text: "Lỗi" },
+    QUEUED: { color: "orange", text: "Chờ xử lý" },
+    RUNNING: { color: "blue", text: "Đang chạy" },
+    SUCCEEDED: { color: "green", text: "Hoàn thành" },
+    FAILED: { color: "red", text: "Thất bại" },
+    CANCELED: { color: "red", text: "Đã hủy" },
+    // Fallback cho các status cũ
+    running: { color: "blue", text: "Đang chạy" },
+    done: { color: "green", text: "Hoàn thành" },
+    error: { color: "red", text: "Đã hủy" },
   };
+
   const status = statusMap[form.status] || statusMap.error;
 
   return (
@@ -36,9 +43,11 @@ function CurrentFormCard({ form }) {
               {form.title}
             </span>
             {typeof form.sentCount === "number" &&
-              typeof form.repeat === "number" && (
+              (typeof form.repeat === "number" ||
+                typeof form.totalRepeat === "number") && (
                 <span className="text-sm text-gray-500 mt-1">
-                  Đã gửi: <b>{form.sentCount}</b> / {form.repeat}
+                  Đã gửi: <b>{form.sentCount}</b> /{" "}
+                  {form.repeat || form.totalRepeat}
                 </span>
               )}
           </div>
@@ -64,12 +73,17 @@ function CurrentFormCard({ form }) {
         </div>
         <div className="mt-4 flex items-center gap-4">
           <Progress
-            percent={form.process}
+            percent={Math.round(
+              (form.process / (form.totalRepeat || form.total_repeat || 1)) *
+                100
+            )}
             size="small"
             status={
-              form.process === 100
+              form.process / (form.totalRepeat || form.total_repeat || 1) === 1
                 ? "success"
-                : form.process < 30
+                : form.process /
+                    (form.totalRepeat || form.total_repeat || 1) ===
+                  0
                 ? "exception"
                 : "active"
             }

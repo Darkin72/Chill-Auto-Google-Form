@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS forms (
   status      status_enum  NOT NULL DEFAULT 'QUEUED',
   process     SMALLINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT forms_repeat_shape_chk  CHECK (repeat  IS NULL OR jsonb_typeof(repeat)  = 'object'),
   CONSTRAINT forms_answers_shape_chk CHECK (answers IS NULL OR jsonb_typeof(answers) IN ('object','array'))
 );
@@ -69,3 +70,17 @@ CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC);
 
 -- Kết hợp: hay dùng khi cần biết job theo form + trạng thái
 CREATE INDEX IF NOT EXISTS idx_jobs_form_status ON jobs(form_id, status);
+
+-- 5) Trigger auto updated_at
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = now();
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_updated_at
+BEFORE UPDATE ON forms
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();

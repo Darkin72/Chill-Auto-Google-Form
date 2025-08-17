@@ -1,4 +1,4 @@
-import { fetchWithTimeout } from "./FormExtractorAPI.jsx";
+import { fetchWithTimeout } from "./FormExtractorAPI.js";
 
 // API endpoint cho database
 const api_endpoint = "http://localhost:8000";
@@ -17,8 +17,8 @@ const api_endpoint = "http://localhost:8000";
 export async function getForms({
   title = "",
   link = "",
-  status = null,
-  createdAt = null,
+  status = "",
+  createdAt = "",
   limit = 10,
   offset = 0,
   timeoutMs = 8000,
@@ -76,16 +76,34 @@ export async function getForms({
 }
 
 /**
- * Lấy thống kê forms từ database
+ * Đếm tổng số forms từ database với các tham số lọc
+ * @param {string} title - Tiêu đề form
+ * @param {string} link - Link form
+ * @param {string} status - Trạng thái form
+ * @param {string} createdAt - Thời gian tạo form
  * @param {number} timeoutMs - Thời gian timeout (ms)
- * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ * @returns {Promise<{ok:true, data:number} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
  */
-export async function getFormStats(timeoutMs = 8000) {
+export async function countForms({
+  title = "",
+  link = "",
+  status = "",
+  createdAt = "",
+  timeoutMs = 8000,
+} = {}) {
   try {
-    console.log("Fetching form stats");
+    // Tạo URL với query parameters
+    const params = new URLSearchParams();
+    if (title) params.append("title", title);
+    if (link) params.append("link", link);
+    if (status) params.append("status", status);
+    if (createdAt) params.append("created_at", createdAt);
+
+    const url = `${api_endpoint}/get-count-forms/?${params.toString()}`;
+    console.log("Counting forms from:", url);
 
     const response = await fetchWithTimeout(
-      `${api_endpoint}/get-form-stats/`,
+      url,
       {
         method: "GET",
         headers: {
@@ -104,6 +122,7 @@ export async function getFormStats(timeoutMs = 8000) {
       return { ok: true, data: body };
     }
 
+    // Server trả về lỗi
     const message =
       (body && (body.detail || body.message || JSON.stringify(body))) ||
       response.statusText ||
@@ -113,6 +132,7 @@ export async function getFormStats(timeoutMs = 8000) {
     if (err?.name === "AbortError") {
       return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
     }
+    // Network/CORS/server down/DNS error
     return {
       ok: false,
       kind: "NETWORK",
@@ -120,3 +140,53 @@ export async function getFormStats(timeoutMs = 8000) {
     };
   }
 }
+
+/**
+ * Xóa form theo ID
+ * @param {string|number} formId - ID của form cần xóa
+ * @param {number} timeoutMs - Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function deleteForm(formId, timeoutMs = 8000) {
+  try {
+    console.log("Deleting form with ID:", formId);
+
+    const response = await fetchWithTimeout(
+      `${api_endpoint}/delete-form/${formId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      timeoutMs
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+
+    if (response.ok) {
+      return { ok: true, data: body };
+    }
+
+    // Server trả về lỗi
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      response.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: response.status, message };
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
+    // Network/CORS/server down/DNS error
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
+  }
+}
+
