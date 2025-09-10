@@ -74,10 +74,11 @@ function StoragePage() {
   const [tableParams, setTableParams] = useState({
     pagination: {
       current: 1,
-      pageSize: 10,
-      showSizeChanger: false,
-      showQuickJumper: true,
-      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} forms`,
+      pageSize: 10, // Giảm xuống 10 để render nhanh hơn
+      showSizeChanger: true,
+      showQuickJumper: false, // Tắt quick jumper để đơn giản hóa
+      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total}`,
+      pageSizeOptions: ["10", "20", "50"], // Giảm options
     },
   });
 
@@ -85,16 +86,22 @@ function StoragePage() {
   const currentPage = tableParams.pagination?.current;
   const pageSize = tableParams.pagination?.pageSize;
 
-  // Ref để lưu polling interval
+  // Ref để lưu polling interval và current values
   const pollingInterval = useRef(null);
+  const currentTableParams = useRef(tableParams);
+  const currentLoading = useRef(loading);
 
-  // Hàm fetch data có thể tái sử dụng
+  // Update refs khi values thay đổi
+  currentTableParams.current = tableParams;
+  currentLoading.current = loading;
+
+  // Hàm fetch data đơn giản
   const fetchData = async (showLoadingIndicator = true) => {
-    if (showLoadingIndicator) {
-      setLoading(true);
-    }
-
     try {
+      if (showLoadingIndicator) {
+        setLoading(true);
+      }
+
       const apiParams = getApiParams(tableParams);
 
       // Fetch forms và count cùng lúc
@@ -144,27 +151,56 @@ function StoragePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize]);
 
-  // Polling effect - cập nhật mỗi 5 giây
+  // Polling tối ưu mỗi 5 giây - tách riêng để tránh re-create
   useEffect(() => {
     // Clear existing interval
     if (pollingInterval.current) {
       clearInterval(pollingInterval.current);
     }
 
-    // Set up new polling interval
-    pollingInterval.current = setInterval(() => {
-      // Polling không hiển thị loading indicator để không làm phiền user
-      fetchData(false);
-    }, 5000); // 5 giây
+    // Tạo hàm polling tối ưu với refs
+    const startPolling = () => {
+      pollingInterval.current = setInterval(async () => {
+        // Sử dụng ref values để tránh dependency
+        if (!currentLoading.current) {
+          try {
+            const apiParams = getApiParams(currentTableParams.current);
+            const [formsResult, countResult] = await Promise.all([
+              getForms(apiParams),
+              countForms(apiParams),
+            ]);
 
-    // Cleanup interval khi component unmount hoặc dependencies thay đổi
+            if (formsResult.ok) {
+              setData(formsResult.data || []);
+            }
+
+            if (countResult.ok) {
+              const totalCount = countResult.data || 0;
+              setTableParams((prevParams) => ({
+                ...prevParams,
+                pagination: {
+                  ...prevParams.pagination,
+                  total: totalCount,
+                },
+              }));
+            }
+          } catch (error) {
+            console.error("Polling error:", error);
+            // Không hiển thị message error để tránh spam notification
+          }
+        }
+      }, 5000);
+    };
+
+    startPolling();
+
+    // Cleanup interval khi component unmount
     return () => {
       if (pollingInterval.current) {
         clearInterval(pollingInterval.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize]); // Safe dependencies vì sử dụng refs cho current values
 
   // Handle table change (pagination, filters, sorter)
   const handleTableChange = (pagination, filters, sorter) => {
@@ -175,9 +211,13 @@ function StoragePage() {
       sortField: Array.isArray(sorter) ? undefined : sorter.field,
     });
 
-    // Clear data nếu pageSize thay đổi
-    if (pagination.pageSize !== tableParams.pagination?.pageSize) {
+    // Clear data và set loading ngay lập tức khi thay đổi pagination
+    if (
+      pagination.pageSize !== tableParams.pagination?.pageSize ||
+      pagination.current !== tableParams.pagination?.current
+    ) {
       setData([]);
+      setLoading(true);
     }
   };
 

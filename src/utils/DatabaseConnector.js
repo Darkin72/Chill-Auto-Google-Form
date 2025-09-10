@@ -51,7 +51,6 @@ export async function getForms({
     const body = contentType.includes("application/json")
       ? await response.json().catch(() => null)
       : await response.text().catch(() => null);
-
     if (response.ok) {
       return { ok: true, data: body };
     }
@@ -155,6 +154,105 @@ export async function deleteForm(formId, timeoutMs = 8000) {
       `${api_endpoint}/delete-form/${formId}`,
       {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      timeoutMs
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+
+    if (response.ok) {
+      return { ok: true, data: body };
+    }
+
+    // Server trả về lỗi
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      response.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: response.status, message };
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
+    // Network/CORS/server down/DNS error
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
+  }
+}
+
+/**
+ * Lấy danh sách form queue từ database
+ * @param {number} timeoutMs - Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function getFormQueue(timeoutMs = 8000) {
+  try {
+    const url = `${api_endpoint}/get-form-queue`;
+    console.log("Fetching form queue from:", url);
+
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      timeoutMs
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+
+    if (response.ok) {
+      return { ok: true, data: body };
+    }
+
+    // Server trả về lỗi
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      response.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: response.status, message };
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
+    // Network/CORS/server down/DNS error
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
+  }
+}
+
+/**
+ * Hủy form đang xử lý
+ * @param {string} formId - ID của form cần hủy
+ * @param {number} timeoutMs - Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function cancelForm(formId, timeoutMs = 8000) {
+  try {
+    const url = `${api_endpoint}/cancel-form/${formId}`;
+    console.log("Cancelling form:", url);
+
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },

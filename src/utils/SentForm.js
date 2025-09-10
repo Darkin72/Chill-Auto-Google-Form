@@ -180,6 +180,7 @@ export async function startSendForm(
   repeat,
   link,
   title,
+  description,
   timeoutMs = 8000
 ) {
   try {
@@ -196,6 +197,7 @@ export async function startSendForm(
           repeat: repeat,
           link: link,
           title: title,
+          description: description,
         }),
       },
       timeoutMs

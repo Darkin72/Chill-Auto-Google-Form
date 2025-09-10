@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { Button, Card, Collapse, Form, Input, Select, Tag } from "antd";
+import { Button, Card, Collapse, Tag } from "antd";
 import { motion } from "framer-motion";
 import {
   MailOutlined,
@@ -10,8 +9,6 @@ import {
   StarFilled,
   CheckCircleFilled,
 } from "@ant-design/icons";
-import { sendFeedback } from "../utils/SentForm";
-import noti from "../components/Notification";
 
 // ===== Constants =====
 const CONTACT_EMAIL = "quanluong2005@gmail.com";
@@ -103,55 +100,7 @@ const InfoCard = ({ icon: Icon, title, desc, href }) => (
 
 // ===== Main =====
 export default function ContactPage() {
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const subjectOptions = useMemo(
-    () => [
-      { value: "support", label: "Hỗ trợ kỹ thuật" },
-      { value: "bug", label: "Báo lỗi" },
-      { value: "feature", label: "Đề xuất tính năng" },
-      { value: "other", label: "Khác" },
-    ],
-    []
-  );
-
-  const onFinish = async (values) => {
-    try {
-      setLoading(true);
-      const res = await sendFeedback(values);
-      if (res.ok) {
-        setSent(true);
-        noti.success(
-          "Đã gửi liên hệ thành công!",
-          "Mình sẽ phản hồi sớm nhất có thể."
-        );
-        form.resetFields();
-        console.log("Success:", res.data);
-      } else {
-        if (res.kind === "HTTP") {
-          noti.error(
-            "Lỗi từ server!",
-            res.message || "Server trả về lỗi khi xử lý feedback."
-          );
-        } else if (res.kind === "TIMEOUT") {
-          noti.warning("Timeout!", "Request bị timeout, vui lòng thử lại.");
-        } else {
-          noti.warning(
-            "Lỗi mạng!",
-            "Không thể kết nối tới máy chủ, vui lòng liên hệ để xử lý."
-          );
-        }
-        console.log("Error:", res);
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      noti.error("Lỗi không xác định!", "Đã có lỗi xảy ra khi gửi feedback.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ...existing code...
 
   return (
     <div className="min-h-screen scroll-smooth bg-gradient-to-b from-[#eff6ff] via-[#dbeafe] to-white/90 text-gray-700">
@@ -170,8 +119,8 @@ export default function ContactPage() {
               Auto Google Form bằng AI • Mã nguồn mở
             </Tag>
             <SectionHeading
-              title="Liên Hệ Với Tôi"
-              subtitle="Tôi luôn sẵn sàng hỗ trợ bạn trong quá trình sử dụng. Đừng ngần ngại gửi câu hỏi hoặc góp ý!"
+              title="Liên Hệ & Thông Tin"
+              subtitle="Bạn có thể liên hệ hoặc tham khảo hướng dẫn sử dụng Docker image bên dưới."
             />
             <div className="mt-6">
               <Button
@@ -195,176 +144,46 @@ export default function ContactPage() {
         </motion.div>
       </header>
 
-      {/* Contact Info + Form */}
+      {/* Contact Info + Docker Guide */}
       <section className="py-10 md:py-16">
         <motion.div
           variants={stagger}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.2 }}
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-            {/* Left: Info */}
-            <motion.div variants={item}>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <InfoCard
-                  icon={MailOutlined}
-                  title="Email"
-                  desc={CONTACT_EMAIL}
-                />
-                <InfoCard
-                  icon={GithubOutlined}
-                  title="GitHub"
-                  desc="Darkin72"
-                  href={GITHUB_URL}
-                />
-                <InfoCard
-                  icon={FacebookOutlined}
-                  title="Facebook"
-                  desc="Duy Quân"
-                  href={FACEBOOK_URL}
-                />
-                <InfoCard
-                  icon={DiscordOutlined}
-                  title="Discord"
-                  desc="Auto Google Form"
-                  href={"https://discord.gg/JtPsnhEs"}
-                />
-              </div>
-              <div className="mt-4 text-xs text-gray-500">
-                * Thời gian phản hồi có thể thay đổi tùy khối lượng yêu cầu. Cảm
-                ơn bạn đã kiên nhẫn!
-              </div>
-            </motion.div>
-
-            {/* Right: Form */}
-            <motion.div variants={item}>
-              <Card className="rounded-[2rem] border-0 shadow-xl shadow-blue-200/40 bg-white/90 backdrop-blur">
-                {!sent ? (
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={onFinish}
-                    validateTrigger={["onChange", "onBlur"]}
-                  >
-                    <Form.Item
-                      label="Họ tên"
-                      name="fullName"
-                      rules={[
-                        { required: true, message: "Vui lòng nhập họ tên" },
-                      ]}
-                    >
-                      <Input
-                        placeholder="Nguyễn Văn A"
-                        allowClear
-                        aria-label="Họ tên"
-                      />
-                    </Form.Item>
-
-                    <Form.Item
-                      label="Email"
-                      name="email"
-                      rules={[
-                        { required: true, message: "Vui lòng nhập email" },
-                        { type: "email", message: "Email không hợp lệ" },
-                      ]}
-                    >
-                      <Input
-                        placeholder="you@example.com"
-                        allowClear
-                        aria-label="Email"
-                      />
-                    </Form.Item>
-
-                    <Form.Item
-                      label="Chủ đề"
-                      name="subject"
-                      rules={[
-                        { required: true, message: "Vui lòng chọn chủ đề" },
-                      ]}
-                    >
-                      <Select
-                        placeholder="Chọn chủ đề"
-                        options={subjectOptions}
-                        aria-label="Chủ đề"
-                      />
-                    </Form.Item>
-
-                    <Form.Item
-                      label="Tin nhắn"
-                      name="message"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Vui lòng nhập nội dung cần hỗ trợ",
-                        },
-                        {
-                          min: 10,
-                          message: "Vui lòng mô tả chi tiết hơn (≥ 10 ký tự)",
-                        },
-                      ]}
-                    >
-                      <Input.TextArea
-                        rows={6}
-                        showCount
-                        maxLength={2000}
-                        placeholder="Mô tả vấn đề hoặc yêu cầu của bạn..."
-                        aria-label="Tin nhắn"
-                      />
-                    </Form.Item>
-
-                    <div className="flex items-center justify-between gap-3">
-                      <Tag color="red" className="rounded-full">
-                        Only on web version.
-                      </Tag>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<SendOutlined />}
-                        loading={loading}
-                        className="!rounded-full !h-11 !px-6 !font-semibold !text-white !bg-[linear-gradient(90deg,#3b82f6,#8b5cf6)] !border-none hover:!opacity-90"
-                      >
-                        Gửi liên hệ
-                      </Button>
-                    </div>
-                  </Form>
-                ) : (
-                  <div className="flex flex-col items-center text-center py-10">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 260,
-                        damping: 20,
-                      }}
-                      className="flex items-center justify-center h-16 w-16 rounded-full bg-green-50"
-                    >
-                      <CheckCircleFilled className="text-green-600 text-3xl" />
-                    </motion.div>
-                    <h3 className="mt-4 text-xl font-semibold text-gray-900">
-                      Đã gửi thành công!
-                    </h3>
-                    <p className="mt-2 text-gray-600 max-w-md">
-                      Cảm ơn bạn đã liên hệ. Tôi sẽ phản hồi qua email trong
-                      thời gian sớm nhất.
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      <Button type="primary" className="!rounded-full" href="/">
-                        Về trang chủ
-                      </Button>
-                      <Button
-                        className="!rounded-full"
-                        onClick={() => setSent(false)}
-                      >
-                        Gửi thêm yêu cầu
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            </motion.div>
+          <div className="flex flex-col items-center gap-8">
+            <div className="grid sm:grid-cols-2 gap-4 w-full">
+              <InfoCard
+                icon={MailOutlined}
+                title="Email"
+                desc={CONTACT_EMAIL}
+              />
+              <InfoCard
+                icon={GithubOutlined}
+                title="GitHub"
+                desc="Darkin72"
+                href={GITHUB_URL}
+              />
+              <InfoCard
+                icon={FacebookOutlined}
+                title="Facebook"
+                desc="Duy Quân"
+                href={FACEBOOK_URL}
+              />
+              <InfoCard
+                icon={DiscordOutlined}
+                title="Discord"
+                desc="Auto Google Form"
+                href={"https://discord.gg/JtPsnhEs"}
+              />
+            </div>
+            {/* Đã bỏ phần hướng dẫn Docker image theo yêu cầu */}
+            <div className="mt-4 text-xs text-gray-500 text-center w-full">
+              * Thời gian phản hồi có thể thay đổi tùy khối lượng yêu cầu. Cảm
+              ơn bạn đã kiên nhẫn!
+            </div>
           </div>
         </motion.div>
       </section>

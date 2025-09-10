@@ -289,6 +289,7 @@ function GoolgeFormView() {
         answer={getAnswerAsObject()}
         link={data.link_edit}
         title={data.title}
+        description={data.description}
         handleSubmitFinalForm={handleSubmitFinalForm}
       />
 

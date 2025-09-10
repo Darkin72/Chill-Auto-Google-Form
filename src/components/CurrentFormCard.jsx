@@ -1,7 +1,15 @@
-import { Card, Tag, Button, Tooltip, Progress, message } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import {
+  Card,
+  Tag,
+  Button,
+  Tooltip,
+  Progress,
+  message,
+  Popconfirm,
+} from "antd";
+import { CopyOutlined, StopOutlined } from "@ant-design/icons";
 
-function CurrentFormCard({ form }) {
+function CurrentFormCard({ form, onCancelForm }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(form.link);
     message.success("Đã sao chép link!");
@@ -42,6 +50,11 @@ function CurrentFormCard({ form }) {
             <span className="text-lg font-bold text-gray-800">
               {form.title}
             </span>
+            {typeof form.remaining_time === "number" && (
+              <span className="text-sm text-gray-500 mt-1">
+                Lần gửi tiếp theo: <b>{form.remaining_time}</b> giây
+              </span>
+            )}
             {typeof form.sentCount === "number" &&
               (typeof form.repeat === "number" ||
                 typeof form.totalRepeat === "number") && (
@@ -89,15 +102,28 @@ function CurrentFormCard({ form }) {
             }
             className="flex-1"
           />
-          <Button
-            danger
-            type="primary"
-            onClick={() => {
-              // TODO: Xử lý hủy tiến trình gửi form
-            }}
-          >
-            Hủy
-          </Button>
+          {onCancelForm &&
+            (form.status === "RUNNING" || form.status === "QUEUED") && (
+              <Popconfirm
+                title="Hủy form này?"
+                description={`Bạn có chắc chắn muốn hủy form "${form.title}"?`}
+                onConfirm={() => onCancelForm(form.id, form.title)}
+                okText="Có"
+                cancelText="Không"
+                okType="danger"
+              >
+                <Tooltip title="Hủy form">
+                  <Button
+                    danger
+                    type="primary"
+                    icon={<StopOutlined />}
+                    size="small"
+                  >
+                    Hủy
+                  </Button>
+                </Tooltip>
+              </Popconfirm>
+            )}
         </div>
       </div>
     </Card>

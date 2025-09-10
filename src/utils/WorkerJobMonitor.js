@@ -118,16 +118,19 @@ class WorkerJobMonitor {
       return {
         id: workerId,
         status: workerData.status,
-        job: workerData.job ? {
-          id: workerData.job.id,
-          title: workerData.job.title,
-          link: workerData.job.link,
-          status: workerData.job.status,
-          process: workerData.job.process,
-          totalRepeat: workerData.job.total_repeat,
-          sentCount: workerData.job.process,
-          repeat: workerData.job.total_repeat
-        } : null
+        job: workerData.job
+          ? {
+              id: workerData.job.id,
+              title: workerData.job.title,
+              link: workerData.job.link,
+              status: workerData.job.status,
+              process: workerData.job.process,
+              totalRepeat: workerData.job.total_repeat,
+              sentCount: workerData.job.process,
+              repeat: workerData.job.total_repeat,
+              remaining_time : workerData.job.remaining_time ? workerData.job.remaining_time : null,
+            }
+          : null,
       };
     });
   }

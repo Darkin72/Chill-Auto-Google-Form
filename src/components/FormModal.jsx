@@ -10,6 +10,7 @@ const FormModal = ({
   loading,
   answer,
   title,
+  description,
   handleSubmitFinalForm,
 }) => {
   const [sending, setSending] = useState(false);
@@ -61,7 +62,13 @@ const FormModal = ({
                 console.log("Giá trị form:", values);
                 setSending(true);
                 try {
-                  const res = await startSendForm(answer, values, link, title);
+                  const res = await startSendForm(
+                    answer,
+                    values,
+                    link,
+                    title,
+                    description
+                  );
                   if (res.ok) {
                     noti.success(
                       "Đã gửi form thành công!",
@@ -101,7 +108,7 @@ const FormModal = ({
               initialValues={{
                 times: 1,
                 randomize: false,
-                repeat: { minutes: 1, hours: 0 },
+                repeat: { minutes: 0, seconds: 1 },
               }}
               onReset={() => {
                 console.log("Form reseted");
@@ -147,20 +154,46 @@ const FormModal = ({
                             : [
                                 {
                                   validator: (_, v) =>
-                                    Number.isInteger(v) && v >= 1 && v <= 59
+                                    Number.isInteger(v) && v >= 0 && v <= 12
                                       ? Promise.resolve()
-                                      : Promise.reject(new Error("Phút 1–12")),
+                                      : Promise.reject(new Error("Phút 0–12")),
                                 },
                               ]
                         }
                       >
                         <InputNumber
-                          min={1}
+                          min={0}
                           max={12}
                           step={1}
                           disabled={disabled}
                           addonAfter="phút"
-                          style={{ width: 160 }}
+                          style={{ width: 120 }}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        noStyle
+                        name={["repeat", "seconds"]}
+                        dependencies={["randomize"]}
+                        rules={
+                          disabled
+                            ? []
+                            : [
+                                {
+                                  validator: (_, v) =>
+                                    Number.isInteger(v) && v >= 1 && v <= 59
+                                      ? Promise.resolve()
+                                      : Promise.reject(new Error("Giây 1–59")),
+                                },
+                              ]
+                        }
+                      >
+                        <InputNumber
+                          min={0}
+                          max={59}
+                          step={1}
+                          disabled={disabled}
+                          addonAfter="giây"
+                          style={{ width: 120 }}
                         />
                       </Form.Item>
                     </Space>
