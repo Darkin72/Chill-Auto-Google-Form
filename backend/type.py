@@ -1,6 +1,4 @@
-from email.policy import default
-from turtle import st
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Dict, Any, List, Optional
 from uuid import UUID
 from datetime import datetime
@@ -53,3 +51,26 @@ class Person(BaseModel):
     personality: Dict
     preferences: Dict
     timeline: List[Dict]
+
+    @field_validator("languages", mode="before")
+    @classmethod
+    def normalize_languages(cls, value):
+        # Accept legacy formats like ["vi", "en"] and normalize to
+        # [{"code": "vi", "level": "unknown"}, ...].
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            parts = [p.strip() for p in value.split(",") if p.strip()]
+            return [{"code": code, "level": "unknown"} for code in parts]
+
+        if isinstance(value, list):
+            normalized = []
+            for item in value:
+                if isinstance(item, dict):
+                    normalized.append(item)
+                elif isinstance(item, str) and item.strip():
+                    normalized.append({"code": item.strip(), "level": "unknown"})
+            return normalized
+
+        return value

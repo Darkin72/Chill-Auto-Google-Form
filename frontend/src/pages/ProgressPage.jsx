@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { Tag, message } from "antd";
 import { motion } from "framer-motion";
 import CurrentFormCard from "../components/CurrentFormCard";
@@ -20,10 +26,15 @@ const useFormQueuePolling = (intervalMs = 5000) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  console.log(queueData);
+  const inFlight = useRef(false);
 
   const fetchQueueData = useCallback(async () => {
+    if (inFlight.current) {
+      return;
+    }
+
     try {
+      inFlight.current = true;
       setLoading(true);
       setError(null);
       const result = await getFormQueue();
@@ -38,6 +49,7 @@ const useFormQueuePolling = (intervalMs = 5000) => {
       setError(err.message || "Unknown error");
       console.error("Error fetching queue data:", err);
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }, []);
@@ -94,7 +106,7 @@ function ProgressPage() {
   // Lọc ra những job chưa chạy (loại bỏ những job có status RUNNING) - dùng useMemo để tối ưu
   const filteredQueueData = useMemo(
     () => queueData.filter((job) => job.status !== "RUNNING"),
-    [queueData]
+    [queueData],
   );
   return (
     <div className="min-h-screen scroll-smooth bg-gradient-to-b from-[#eff6ff] via-[#dbeafe] to-white/90 text-gray-700">

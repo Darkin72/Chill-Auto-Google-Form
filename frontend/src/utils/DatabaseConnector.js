@@ -1,7 +1,8 @@
 import { fetchWithTimeout } from "./FormExtractorAPI.js";
+import { API_BASE_URL } from "./env";
 
 // API endpoint cho database
-const api_endpoint = "http://localhost:8000";
+const api_endpoint = API_BASE_URL;
 
 /**
  * Lấy danh sách forms từ database với các tham số lọc
@@ -34,7 +35,6 @@ export async function getForms({
     params.append("offset", Math.max(offset, 0)); // Đảm bảo offset >= 0
 
     const url = `${api_endpoint}/get-forms/?${params.toString()}`;
-    console.log("Fetching forms from:", url);
 
     const response = await fetchWithTimeout(
       url,
@@ -99,7 +99,6 @@ export async function countForms({
     if (createdAt) params.append("created_at", createdAt);
 
     const url = `${api_endpoint}/get-count-forms/?${params.toString()}`;
-    console.log("Counting forms from:", url);
 
     const response = await fetchWithTimeout(
       url,
@@ -148,7 +147,6 @@ export async function countForms({
  */
 export async function deleteForm(formId, timeoutMs = 8000) {
   try {
-    console.log("Deleting form with ID:", formId);
 
     const response = await fetchWithTimeout(
       `${api_endpoint}/delete-form/${formId}`,
@@ -197,7 +195,6 @@ export async function deleteForm(formId, timeoutMs = 8000) {
 export async function getFormQueue(timeoutMs = 8000) {
   try {
     const url = `${api_endpoint}/get-form-queue`;
-    console.log("Fetching form queue from:", url);
 
     const response = await fetchWithTimeout(
       url,
@@ -247,7 +244,6 @@ export async function getFormQueue(timeoutMs = 8000) {
 export async function cancelForm(formId, timeoutMs = 8000) {
   try {
     const url = `${api_endpoint}/cancel-form/${formId}`;
-    console.log("Cancelling form:", url);
 
     const response = await fetchWithTimeout(
       url,
@@ -280,6 +276,53 @@ export async function cancelForm(formId, timeoutMs = 8000) {
       return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
     }
     // Network/CORS/server down/DNS error
+    return {
+      ok: false,
+      kind: "NETWORK",
+      message: err?.message || "Network error",
+    };
+  }
+}
+
+/**
+ * Retry form đã FAILED/CANCELED
+ * @param {string} formId - ID của form cần retry
+ * @param {number} timeoutMs - Thời gian timeout (ms)
+ * @returns {Promise<{ok:true, data:any} | {ok:false, kind:'HTTP'|'NETWORK'|'TIMEOUT', status?:number, message:string}>}
+ */
+export async function retryForm(formId, timeoutMs = 8000) {
+  try {
+    const url = `${api_endpoint}/retry-form/${formId}`;
+
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      timeoutMs
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+
+    if (response.ok) {
+      return { ok: true, data: body };
+    }
+
+    const message =
+      (body && (body.detail || body.message || JSON.stringify(body))) ||
+      response.statusText ||
+      "HTTP error";
+    return { ok: false, kind: "HTTP", status: response.status, message };
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      return { ok: false, kind: "TIMEOUT", message: "Request timed out" };
+    }
     return {
       ok: false,
       kind: "NETWORK",

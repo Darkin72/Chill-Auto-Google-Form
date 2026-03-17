@@ -10,12 +10,12 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
-from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from AnswerType import PERSON_FILL, DEFAULT_20_SKILLS
 from langchain_core.prompts import ChatPromptTemplate
+from utils.env_loader import load_shared_env
 
-load_dotenv(override=True)
+load_shared_env(__file__, override=True)
 
 DATABASE_URL = f"postgresql+asyncpg://{os.environ.get('POSTGRES_USER', '')}:{os.environ.get('POSTGRES_PASSWORD', '')}@localhost:{os.environ.get('POSTGRES_PORT', '')}/{os.environ.get('POSTGRES_DB', '')}"
 FOLDER = "data"

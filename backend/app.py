@@ -5,20 +5,28 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from type import Link, FinalForm, FeedBack, FormOut
-from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from typing import Optional, List
 from Worker import Worker, WorkerSupervisor
 from websocket_manager import websocket_manager
 from sqlalchemy import text
 import os
+import re
+from utils.env_loader import load_shared_env
 
 from database.DatabaseConnector import DatabaseConnector
 
 # Initialize
 
-load_dotenv(override=True)
-FRONT_END_ORIGIN = os.environ.get("CORS_ORIGINS", "")
+load_shared_env(__file__)
+FRONT_END_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in re.split(r"[,;&\s]+", os.environ.get("CORS_ORIGINS", ""))
+    if origin.strip()
+]
+CORS_ORIGIN_REGEX = os.environ.get(
+    "CORS_ORIGIN_REGEX", r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+)
 WORKERS_NUMBER = int(os.environ.get("WORKERS_NUMBER", "1"))
 
 db_connector = DatabaseConnector()
@@ -65,7 +73,8 @@ app = FastAPI(title="Chill backend", lifespan=lifespan)
 # Allow CORS for front-end origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONT_END_ORIGIN,
+    allow_origins=FRONT_END_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers

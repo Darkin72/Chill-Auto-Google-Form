@@ -1,15 +1,16 @@
 from asyncpg import RaiseError
 from type import Form, FormOut, Person
 from typing import Optional
-from dotenv import load_dotenv
 import os
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
+from utils.env_loader import load_shared_env
 
-load_dotenv()
+load_shared_env(__file__)
 
-DATABASE_URL = f"postgresql+asyncpg://{os.environ.get('POSTGRES_USER', '')}:{os.environ.get('POSTGRES_PASSWORD', '')}@localhost:{os.environ.get('POSTGRES_PORT', '')}/{os.environ.get('POSTGRES_DB', '')}"
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+DATABASE_URL = f"postgresql+asyncpg://{os.environ.get('POSTGRES_USER', '')}:{os.environ.get('POSTGRES_PASSWORD', '')}@{POSTGRES_HOST}:{os.environ.get('POSTGRES_PORT', '')}/{os.environ.get('POSTGRES_DB', '')}"
 
 
 class DatabaseConnector:

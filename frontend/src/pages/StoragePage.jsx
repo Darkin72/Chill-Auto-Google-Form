@@ -3,16 +3,28 @@ import {
   Table,
   Tag,
   Button,
+  Space,
+  Typography,
   Progress,
   Tooltip,
   message,
   Card,
   Popconfirm,
 } from "antd";
-import { CopyOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  CopyOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { motion } from "framer-motion";
 import AnswerModal from "../components/AnswerModal";
-import { getForms, countForms, deleteForm } from "../utils/DatabaseConnector";
+import {
+  getForms,
+  countForms,
+  deleteForm,
+  retryForm,
+} from "../utils/DatabaseConnector";
 
 const statusMap = {
   QUEUED: { color: "orange", text: "Chờ xử lý" },
@@ -30,6 +42,8 @@ const fadeDown = {
   initial: { opacity: 0, y: -16 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
+
+const RETRYABLE_STATUSES = new Set(["FAILED", "CANCELED", "error"]);
 
 // Helper function để chuyển đổi tableParams thành API params
 const getApiParams = (tableParams) => {
@@ -71,6 +85,8 @@ function StoragePage() {
   const [selectedForm, setSelectedForm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [retrying, setRetrying] = useState(false);
   const [tableParams, setTableParams] = useState({
     pagination: {
       current: 1,
@@ -88,6 +104,7 @@ function StoragePage() {
 
   // Ref để lưu polling interval và current values
   const pollingInterval = useRef(null);
+  const pollingInFlight = useRef(false);
   const currentTableParams = useRef(tableParams);
   const currentLoading = useRef(loading);
 
@@ -151,6 +168,13 @@ function StoragePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize]);
 
+  useEffect(() => {
+    setSelectedRowKeys((prevKeys) => {
+      const currentIds = new Set(data.map((item) => item.id));
+      return prevKeys.filter((id) => currentIds.has(id));
+    });
+  }, [data]);
+
   // Polling tối ưu mỗi 5 giây - tách riêng để tránh re-create
   useEffect(() => {
     // Clear existing interval
@@ -161,9 +185,14 @@ function StoragePage() {
     // Tạo hàm polling tối ưu với refs
     const startPolling = () => {
       pollingInterval.current = setInterval(async () => {
+        if (pollingInFlight.current) {
+          return;
+        }
+
         // Sử dụng ref values để tránh dependency
         if (!currentLoading.current) {
           try {
+            pollingInFlight.current = true;
             const apiParams = getApiParams(currentTableParams.current);
             const [formsResult, countResult] = await Promise.all([
               getForms(apiParams),
@@ -187,6 +216,8 @@ function StoragePage() {
           } catch (error) {
             console.error("Polling error:", error);
             // Không hiển thị message error để tránh spam notification
+          } finally {
+            pollingInFlight.current = false;
           }
         }
       }, 5000);
@@ -244,6 +275,99 @@ function StoragePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetrySingleForm = async (record) => {
+    try {
+      setRetrying(true);
+      const result = await retryForm(record.id);
+      if (result.ok) {
+        message.success(`Đã retry form "${record.title}"`);
+        await fetchData(false);
+      } else {
+        message.error(
+          `Không thể retry form "${record.title}": ${result.message}`,
+        );
+      }
+    } catch (error) {
+      console.error("Error retrying form:", error);
+      message.error("Lỗi kết nối khi retry form!");
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleRetrySelected = async () => {
+    const selectedRetryable = data.filter(
+      (item) =>
+        selectedRowKeys.includes(item.id) &&
+        RETRYABLE_STATUSES.has(item.status),
+    );
+
+    if (selectedRetryable.length === 0) {
+      message.warning("Không có task lỗi nào được chọn để retry.");
+      return;
+    }
+
+    try {
+      setRetrying(true);
+      const results = await Promise.allSettled(
+        selectedRetryable.map((item) => retryForm(item.id)),
+      );
+
+      let successCount = 0;
+      let failCount = 0;
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.ok) {
+          successCount += 1;
+        } else {
+          failCount += 1;
+        }
+      });
+
+      if (successCount > 0) {
+        message.success(`Retry thành công ${successCount} task.`);
+      }
+      if (failCount > 0) {
+        message.warning(`${failCount} task retry chưa thành công.`);
+      }
+
+      setSelectedRowKeys([]);
+      await fetchData(false);
+    } catch (error) {
+      console.error("Error retrying selected forms:", error);
+      message.error("Lỗi khi retry danh sách task đã chọn.");
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleSelectAllRetryable = () => {
+    const retryableIds = data
+      .filter((item) => RETRYABLE_STATUSES.has(item.status))
+      .map((item) => item.id);
+    setSelectedRowKeys(retryableIds);
+
+    if (retryableIds.length === 0) {
+      message.info("Trang hiện tại không có task lỗi để chọn.");
+    }
+  };
+
+  const selectedRetryableCount = data.filter(
+    (item) =>
+      selectedRowKeys.includes(item.id) && RETRYABLE_STATUSES.has(item.status),
+  ).length;
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+    getCheckboxProps: (record) => ({
+      disabled: !RETRYABLE_STATUSES.has(record.status),
+      name: record.title,
+    }),
   };
 
   const columns = [
@@ -339,8 +463,8 @@ function StoragePage() {
                 percent === 100
                   ? "success"
                   : percent === 0
-                  ? "exception"
-                  : "active"
+                    ? "exception"
+                    : "active"
               }
               className="min-w-[80px]"
             />
@@ -365,27 +489,47 @@ function StoragePage() {
     {
       title: "Thao tác",
       key: "action",
-      width: 100,
+      width: 180,
       align: "center",
       render: (_, record) => (
-        <Popconfirm
-          title="Xóa form"
-          description={`Bạn có chắc chắn muốn xóa form "${record.title}"?`}
-          onConfirm={() => handleDeleteForm(record.id, record.title)}
-          okText="Xóa"
-          cancelText="Hủy"
-          okType="danger"
-        >
-          <Tooltip title="Xóa form">
+        <Space>
+          <Tooltip
+            title={
+              RETRYABLE_STATUSES.has(record.status)
+                ? "Retry task"
+                : "Chỉ retry được task FAILED/CANCELED"
+            }
+          >
             <Button
-              icon={<DeleteOutlined />}
+              icon={<ReloadOutlined />}
               size="small"
               type="text"
-              danger
-              className="hover:bg-red-50"
+              disabled={!RETRYABLE_STATUSES.has(record.status)}
+              loading={retrying}
+              onClick={() => handleRetrySingleForm(record)}
+              className="hover:bg-blue-50"
             />
           </Tooltip>
-        </Popconfirm>
+
+          <Popconfirm
+            title="Xóa form"
+            description={`Bạn có chắc chắn muốn xóa form "${record.title}"?`}
+            onConfirm={() => handleDeleteForm(record.id, record.title)}
+            okText="Xóa"
+            cancelText="Hủy"
+            okType="danger"
+          >
+            <Tooltip title="Xóa form">
+              <Button
+                icon={<DeleteOutlined />}
+                size="small"
+                type="text"
+                danger
+                className="hover:bg-red-50"
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -421,10 +565,38 @@ function StoragePage() {
       <section className="py-10 md:py-16">
         <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="rounded-[2rem] border-0 shadow-xl shadow-blue-200/40 bg-white/90 backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Typography.Text className="text-gray-600">
+                Đã chọn {selectedRowKeys.length} task, có{" "}
+                {selectedRetryableCount} task lỗi có thể retry.
+              </Typography.Text>
+              <Space wrap>
+                <Button onClick={handleSelectAllRetryable}>
+                  Chọn tất cả task lỗi
+                </Button>
+                <Button
+                  onClick={() => setSelectedRowKeys([])}
+                  disabled={selectedRowKeys.length === 0}
+                >
+                  Bỏ chọn
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={handleRetrySelected}
+                  loading={retrying}
+                  disabled={selectedRetryableCount === 0}
+                >
+                  Retry đã chọn
+                </Button>
+              </Space>
+            </div>
+
             <Table
               columns={columns}
               dataSource={data}
               rowKey="id"
+              rowSelection={rowSelection}
               pagination={tableParams.pagination}
               loading={loading}
               onChange={handleTableChange}

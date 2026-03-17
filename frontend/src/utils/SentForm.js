@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from "./FormExtractorAPI";
+import { API_BASE_URL } from "./env";
 
 // Helper function to validate ratio values
 function isValidRatio(ratio) {
@@ -166,7 +167,7 @@ export function sendForm(answer) {
   return { success: true, message: "Form đã sắn sàng để gửi !" };
 }
 
-const api_endpoint = "http://localhost:8000";
+const api_endpoint = API_BASE_URL;
 
 /**
  * Gửi form answer với timeout.

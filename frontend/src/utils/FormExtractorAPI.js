@@ -1,5 +1,7 @@
+import { API_BASE_URL } from "./env";
+
 // api endpoint
-const api_endpoint = "http://localhost:8000/submit-link";
+const api_endpoint = `${API_BASE_URL}/submit-link`;
 
 /**
  * Hàm chung để thực thi một Promise với timeout

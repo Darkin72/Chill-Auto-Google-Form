@@ -13,16 +13,16 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import bindparam
-from dotenv import load_dotenv
+from utils.env_loader import load_shared_env
 
-load_dotenv()
+load_shared_env(__file__)
 
 DATABASE_URL = (
     f"postgresql+asyncpg://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}"
-    f"@localhost:{os.environ['POSTGRES_PORT']}/{os.environ['POSTGRES_DB']}"
+    f"@{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ['POSTGRES_PORT']}/{os.environ['POSTGRES_DB']}"
 )
 
-DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR = Path(__file__).resolve().parent.parent / "database" / "data"
 
 INSERT_SQL = text(
     """

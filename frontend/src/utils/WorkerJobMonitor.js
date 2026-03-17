@@ -1,3 +1,5 @@
+import { WS_BASE_URL } from "./env";
+
 class WorkerJobMonitor {
   constructor() {
     this.ws = null;
@@ -11,7 +13,7 @@ class WorkerJobMonitor {
 
   connect() {
     try {
-      this.ws = new WebSocket("ws://localhost:8000/ws/worker-monitor");
+      this.ws = new WebSocket(`${WS_BASE_URL}/ws/worker-monitor`);
 
       this.ws.onopen = () => {
         this.connectionStatus = true;

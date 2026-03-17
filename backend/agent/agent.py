@@ -15,13 +15,28 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import os
-from dotenv import load_dotenv
+from utils.env_loader import load_shared_env
 
-load_dotenv(override=True)
+load_shared_env(__file__, override=True)
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
 
 
 class Agent:
     def __init__(self, person_info: Dict, title, description):
+        self.person_name = person_info.get("name_full", "")
         person_info.pop("persona_id")
         person_info.pop("updated_at")
         person_info["dob"] = person_info["dob"].strftime("%Y-%m-%d %H:%M:%S")
@@ -30,10 +45,10 @@ class Agent:
         # llm instance
         self.llm = ChatOpenAI(
             model=os.getenv("MODEL_NAME", "gpt-oss-20b"),
-            temperature=0,
+            temperature=_env_float("LLM_TEMPERATURE", 0.0),
             reasoning_effort="low",
-            max_retries=2,
-            base_url="http://gpt-oss.llm.mobifone.vn/v1/",
+            max_retries=_env_int("LLM_MAX_RETRIES", 2),
+            base_url=os.getenv("LLM_BASE_URL", "http://gpt-oss.llm.mobifone.vn/v1/"),
         )
 
         # history instance

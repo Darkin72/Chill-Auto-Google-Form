@@ -25,15 +25,20 @@ class Worker:
         persons = await self.connector.get_random_person(1)
         if not persons:
             raise RuntimeError("Không có persona nào trong database")
-        random_person = persons[0]
-        sender = Sender(
-            person=random_person.model_dump(),
-            title=form.title,
-            description=form.description,
-        )
-        prepared_answer = sender.prepare_answer(form.answer)
-        response = sender.send(form.link, prepared_answer)
-        return response
+        random_person = persons[0].model_dump()
+
+        def submit_blocking():
+            sender = Sender(
+                person=random_person,
+                title=form.title,
+                description=form.description,
+            )
+            prepared_answer = sender.prepare_answer(form.answer)
+            return sender.send(form.link, prepared_answer)
+
+        # Sender dùng requests/LLM dạng blocking; chạy trong thread để
+        # tránh block event loop làm chậm toàn bộ API.
+        return await asyncio.to_thread(submit_blocking)
 
     async def run_once(
         self,
