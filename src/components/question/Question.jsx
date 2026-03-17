@@ -8,7 +8,7 @@ import DateInput from "./DateInput";
 import TimeInput from "./TimeInput";
 import OptionsWithRatio from "./OptionsWithRatio";
 import LinearScaleInput from "./LinearScaleInput";
-import GridQuestion from "./GridQuestion";
+import ImageQuestion from "./ImageQuestion";
 
 const QuestionTypes = {
   0: "Trả lời ngắn",
@@ -22,6 +22,7 @@ const QuestionTypes = {
   8: "Mô tả đầu trang",
   9: "Ngày",
   10: "Giờ",
+  11: "Ảnh",
   18: "Xếp hạng",
 };
 
@@ -188,7 +189,8 @@ function Question({
       case 6: // Mô tả cuối trang
       case 8: // Mô tả đầu trang
         return <DescriptionSection question={question} />;
-
+      case 11: // Image
+        return <ImageQuestion question={question} />;
       default:
         return (
           <Box>

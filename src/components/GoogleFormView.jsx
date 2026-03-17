@@ -19,23 +19,6 @@ import { DataContext } from "../context/DataContext";
 import { Question } from "./question";
 import GridGroupQuestion from "./question/GridGroupQuestion";
 
-const QuestionTypes = {
-  0: "Trả lời ngắn",
-  1: "Đoạn văn",
-  2: "Trắc nghiệm",
-  3: "Menu thả xuống",
-  4: "Hộp kiểm",
-  5: "Phạm vi tuyến tính",
-  6: "Mô tả cuối trang",
-  7: "Lưới",
-  8: "Mô tả đầu trang",
-  9: "Ngày",
-  10: "Giờ",
-  18: "Xếp hạng",
-};
-
-const NonRenderQuestionTypes = []; // Bây giờ render tất cả types
-
 function GoolgeFormView() {
   const {
     data,
