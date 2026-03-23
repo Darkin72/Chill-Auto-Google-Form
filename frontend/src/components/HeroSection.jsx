@@ -58,7 +58,7 @@ const HeroSection = ({ scrollTo, howRef }) => {
 
             <div className="mt-8 grid grid-cols-3 gap-4 max-w-md text-center">
               <div className="p-4 rounded-2xl bg-white/80 shadow">
-                <div className="text-2xl font-bold text-gray-900">100 lần</div>
+                <div className="text-2xl font-bold text-gray-900">150 lần</div>
                 <div className="text-xs text-gray-500">
                   Nhanh hơn so với điền form thủ công
                 </div>

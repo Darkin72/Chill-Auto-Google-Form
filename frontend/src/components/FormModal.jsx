@@ -67,12 +67,12 @@ const FormModal = ({
                     values,
                     link,
                     title,
-                    description
+                    description,
                   );
                   if (res.ok) {
                     noti.success(
                       "Đã gửi form thành công!",
-                      "Form đã được gửi đến server."
+                      "Form đã được gửi đến server.",
                     );
                     console.log("Success:", res.data);
                     handleSubmitFinalForm();
@@ -80,17 +80,17 @@ const FormModal = ({
                     if (res.kind === "HTTP") {
                       noti.error(
                         "Lỗi từ server!",
-                        res.message || "Server trả về lỗi khi xử lý form."
+                        res.message || "Server trả về lỗi khi xử lý form.",
                       );
                     } else if (res.kind === "TIMEOUT") {
                       noti.warning(
                         "Timeout!",
-                        "Request bị timeout, vui lòng thử lại."
+                        "Request bị timeout, vui lòng thử lại.",
                       );
                     } else {
                       noti.warning(
                         "Lỗi mạng!",
-                        "Không thể kết nối tới máy chủ, vui lòng liên hệ để xử lý."
+                        "Không thể kết nối tới máy chủ, vui lòng liên hệ để xử lý.",
                       );
                     }
                     console.log("Error:", res);
@@ -98,7 +98,7 @@ const FormModal = ({
                 } catch (error) {
                   noti.error(
                     "Lỗi không xác định!",
-                    "Đã có lỗi xảy ra khi gửi form."
+                    "Đã có lỗi xảy ra khi gửi form.",
                   );
                   console.log("Unexpected error:", error);
                 } finally {
@@ -121,13 +121,13 @@ const FormModal = ({
                   { required: true, message: "Vui lòng nhập số lần!" },
                   {
                     validator: (_, v) =>
-                      Number.isInteger(v) && v >= 1 && v <= 50
+                      Number.isInteger(v) && v >= 1 && v <= 150
                         ? Promise.resolve()
-                        : Promise.reject(new Error("Chỉ nhận số nguyên 1–50")),
+                        : Promise.reject(new Error("Chỉ nhận số nguyên 1–150")),
                   },
                 ]}
               >
-                <InputNumber min={1} max={50} step={1} />
+                <InputNumber min={1} max={150} step={1} />
               </Form.Item>
               <Form.Item
                 name="randomize"
