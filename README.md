@@ -101,6 +101,8 @@ Bước 3: Chạy từ thư mục gốc project:
 docker compose --env-file .\docker\.env -f .\docker\docker-compose.yml up -d --build
 ```
 
+Lưu ý: khi chạy compose, service `persona-seeder` sẽ tự động import toàn bộ JSON trong `database/data` vào bảng `persona` (idempotent, không tạo trùng dữ liệu).
+
 Kiểm tra trạng thái:
 
 ```powershell
@@ -226,9 +228,7 @@ Nếu cần reset dữ liệu persona:
 ```powershell
 docker compose --env-file .\docker\.env -f .\docker\docker-compose.yml exec postgres psql -U app -d appdb -c "TRUNCATE TABLE persona;"
 
-Set-Location .\backend
-.\.venv\Scripts\python.exe import_personas.py
-Set-Location ..
+docker compose --env-file .\docker\.env -f .\docker\docker-compose.yml run --rm persona-seeder
 ```
 
 Kiểm tra nhanh:
